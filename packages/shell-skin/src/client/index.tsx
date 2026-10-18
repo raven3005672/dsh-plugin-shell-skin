@@ -6,22 +6,28 @@
  * application for a moment and fades away; nothing here touches Sessions,
  * models, or the host.
  */
+import type { Context } from '@deepseek-ai/cordis'
+// import type {} from '@deepseek-ai/dsh-client-ui-renderer'      // ctx.slots
+import type {} from '@deepseek-ai/dsh-client-ui-theme/client'  // ctx.theme
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { ReactElement } from 'react'
+import wallpaper from '../../assets/wallpaper.jpg'
 
 /** The slice of the client Context this plugin uses. */
-interface ClientContext {
-  slots: {
-    inject(name: string, factory: () => () => void): () => void
-    register(options: { name: string; id: string }, component: () => ReactElement | null): () => void
-  }
-}
+// interface ClientContext {
+//   effect(register: () => () => void): () => void
+//   slots: {
+//     inject(name: string, factory: () => () => void): () => void
+//     register(options: { name: string; id: string }, component: () => ReactElement | null): () => void
+//   }
+// }
 
 /** Build the plugin's browser identity. */
 export const name = 'shell-skin'
 /** `slots` is the only service this plugin reads. */
-export const inject = ['slots']
+export const inject = ['slots', 'theme']
 
 const HOLD_MS = 1100
 const FADE_MS = 420
@@ -120,15 +126,39 @@ function Splash(): ReactElement | null {
   )
 }
 
+const SKIN_CSS = `
+  html {
+    background: center / cover no-repeat fixed url("${wallpaper}");
+  }
+`
+
 /**
  * Register the splash into the frame-wide overlay seat. `slots.inject` waits
  * for ui-layout to declare the slot, so plugin activation order does not
  * matter.
  * @param ctx - the client Context.
  */
-export function apply(ctx: ClientContext): void {
+export function apply(ctx: Context): void {
   ctx.slots.inject('shell.overlay', () => ctx.slots.register(
     { name: 'shell.overlay', id: 'shell-skin.splash' },
     Splash,
   ))
+  ctx.effect(() => {
+    const style = document.createElement('style')
+    style.textContent = SKIN_CSS
+    document.head.appendChild(style)
+    return () => style.remove()
+  })
+  ctx.effect(() => 
+    ctx.theme.overrideTokens('shell-skin', {
+      '--dsw-alias-bg-base': {
+        light: 'rgba(255, 255, 255, 0.80)',
+        dark: 'rgba(12, 14, 20, 0.55)',
+      },
+      '--dsw-specific-sidebar-fill': {
+        light: 'rgba(246, 247, 249, 0.78)',
+        dark: 'rgba(18, 20, 28, 0.45)',
+      },
+    })
+  )
 }

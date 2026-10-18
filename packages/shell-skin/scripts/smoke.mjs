@@ -18,6 +18,11 @@ const require = createRequire(join(pkgRoot, 'package.json'))
 
 let registration
 globalThis.window = { __ModuleLoader__: { load: value => { registration = value } } }
+// apply() injects its stylesheet through the DOM; a bare stub is enough here.
+globalThis.document = {
+  createElement: () => ({ textContent: '', remove() {} }),
+  head: { appendChild() {} },
+}
 new Function('window', 'require', readFileSync(join(pkgRoot, 'lib/client.js'), 'utf8'))(
   globalThis.window,
   require,
@@ -26,12 +31,20 @@ new Function('window', 'require', readFileSync(join(pkgRoot, 'lib/client.js'), '
 assert.equal(registration.id, pkg.name, 'bundle id must equal the package name')
 const plugin = registration.factory(require)
 assert.equal(typeof plugin.apply, 'function', 'client plugin must export apply')
+assert.deepEqual(plugin.inject, ['slots', 'theme'], 'inject must declare both services')
 
 const calls = []
 plugin.apply({
+  effect: execute => { calls.push('effect'); return execute() },
   slots: {
     inject: (slot, factory) => { calls.push(`inject:${slot}`); return factory() },
     register: options => { calls.push(`register:${options.name}#${options.id}`); return () => {} },
+  },
+  theme: {
+    overrideTokens: (source, tokens) => {
+      calls.push(`theme:${source}:${Object.keys(tokens).sort().join(',')}`)
+      return () => {}
+    },
   },
 })
 
@@ -39,5 +52,9 @@ assert.ok(calls.includes('inject:shell.overlay'), 'must wait on shell.overlay')
 assert.ok(
   calls.some(call => call.startsWith('register:shell.overlay#')),
   'must register into shell.overlay',
+)
+assert.ok(
+  calls.some(call => call.startsWith('theme:shell-skin:')),
+  'must stack a theme override layer',
 )
 console.log(`ok ${pkg.name}: ${calls.join(' | ')}`)

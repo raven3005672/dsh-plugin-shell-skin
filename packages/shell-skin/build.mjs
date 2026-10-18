@@ -40,6 +40,7 @@ await build({
   target: 'es2022',
   jsx: 'automatic',
   external: ['react', 'react/jsx-runtime', 'react-dom', 'react-dom/client'],
+  loader: { '.jpg': 'dataurl', '.png': 'dataurl', '.webp': 'dataurl' },
   logLevel: 'warning',
 })
 
