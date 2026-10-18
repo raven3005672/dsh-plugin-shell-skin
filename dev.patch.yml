@@ -1,0 +1,6 @@
+# Local development overlay: mount shell-skin straight from this checkout.
+# Run from the deepseek-harness checkout:
+#   pnpm dsh web --patch ../dsh-plugins/dev.patch.yml
+- insert:
+    - id: shell-skin
+      name: /Users/yanglin/github/dsh-plugins/packages/shell-skin/lib/index.js
