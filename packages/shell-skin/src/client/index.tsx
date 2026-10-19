@@ -1,33 +1,98 @@
 /**
  * Browser half of shell-skin.
  *
- * It occupies one seat only: `shell.overlay`, the frame-wide list slot that
- * ui-layout declares above the three columns. The splash covers the assembled
- * application for a moment and fades away; nothing here touches Sessions,
- * models, or the host.
+ * It reads the settings the host half injects, stacks the skin's token layer
+ * on the active theme, and occupies one seat: `shell.overlay`, the frame-wide
+ * list slot ui-layout declares above the three columns. Nothing here touches
+ * Sessions or model requests.
  */
 import type { Context } from '@deepseek-ai/cordis'
-// import type {} from '@deepseek-ai/dsh-client-ui-renderer'      // ctx.slots
-import type {} from '@deepseek-ai/dsh-client-ui-theme/client'  // ctx.theme
+import type {} from '@deepseek-ai/dsh-client-ui-theme/client'
+import type {} from '@deepseek-ai/dsh-client-ui-settings/client'  // ctx.theme
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { ReactElement } from 'react'
 import wallpaper from '../../assets/wallpaper.jpg'
+import { SkinSettingsRow } from './SkinSettingsRow.tsx'
 
-/** The slice of the client Context this plugin uses. */
-// interface ClientContext {
-//   effect(register: () => () => void): () => void
-//   slots: {
-//     inject(name: string, factory: () => () => void): () => void
-//     register(options: { name: string; id: string }, component: () => ReactElement | null): () => void
-//   }
-// }
 
 /** Build the plugin's browser identity. */
 export const name = 'shell-skin'
-/** `slots` is the only service this plugin reads. */
+/** Services this plugin reads. */
 export const inject = ['slots', 'theme']
+
+/** Settings the host half injects into the boot HTML. */
+interface SkinSettings {
+  /** Play the startup flourish. */
+  splash: boolean
+  /** Panel opacity over the wallpaper in the light palette. */
+  lightOpacity: number
+  /** Panel opacity over the wallpaper in the dark palette. */
+  darkOpacity: number
+  /** Colour behind the wallpaper in the light palette. */
+  bootColorLight: string
+  /** Colour behind the wallpaper in the dark palette. */
+  bootColorDark: string
+}
+
+const FALLBACK_SETTINGS: SkinSettings = {
+  splash: true,
+  lightOpacity: 0.8,
+  darkOpacity: 0.55,
+  bootColorLight: '#ffffff',
+  bootColorDark: '#0c0f15',
+}
+
+/** Read `__SHELL_SKIN__`, falling back when the row is mounted without a host injection. */
+function readSettings(): SkinSettings {
+  const injected = (globalThis as Record<string, unknown>).__SHELL_SKIN__ as Partial<SkinSettings> | undefined
+  return {
+    splash: injected?.splash ?? FALLBACK_SETTINGS.splash,
+    lightOpacity: injected?.lightOpacity ?? FALLBACK_SETTINGS.lightOpacity,
+    darkOpacity: injected?.darkOpacity ?? FALLBACK_SETTINGS.darkOpacity,
+    bootColorLight: injected?.bootColorLight ?? FALLBACK_SETTINGS.bootColorLight,
+    bootColorDark: injected?.bootColorDark ?? FALLBACK_SETTINGS.bootColorDark,
+  }
+}
+
+const settings = readSettings()
+
+/** Settings namespace this plugin owns: the row id in the profile patch. */
+const SETTINGS_NAMESPACE = 'shell-skin'
+
+/** The slice of the settings form controller used for live preview. */
+interface ConfigFormLike {
+  getSnapshot(): { value?: Partial<SkinSettings> }
+  subscribe(listener: () => void): () => void
+}
+
+/** The slice of the settings service used to find that form. */
+interface ConfigFormsLike {
+  get(id: string): ConfigFormLike
+}
+
+/** Sidebars read as one shade denser than the main surface. */
+const SIDEBAR_DELTA = 0.1
+
+/**
+ * Format one translucent color.
+ * @param rgb - comma-separated channels.
+ * @param opacity - resolved opacity, clamped at zero.
+ * @returns a CSS `rgba()` value.
+ */
+function rgba(rgb: string, opacity: number): string {
+  return `rgba(${rgb}, ${Math.max(0, opacity).toFixed(2)})`
+}
+
+/**
+ * Derive the sidebar opacity from the surface opacity.
+ * @param opacity - surface opacity.
+ * @returns sidebar opacity, never below zero.
+ */
+function sidebarOpacity(opacity: number): number {
+  return Math.max(0, opacity - SIDEBAR_DELTA)
+}
 
 const HOLD_MS = 1100
 const FADE_MS = 420
@@ -128,9 +193,47 @@ function Splash(): ReactElement | null {
 
 const SKIN_CSS = `
   html {
-    background: center / cover no-repeat fixed url("${wallpaper}");
+    --shell-skin-boot-light: ${settings.bootColorLight};
+    --shell-skin-boot-dark: ${settings.bootColorDark};
+    background-color: var(--shell-skin-boot-light);
+    background-image: url("${wallpaper}");
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+  /* The palette flag lives on <body>, so the colour is selected from html. */
+  html:has(body[data-ds-dark-theme]) {
+    background-color: var(--shell-skin-boot-dark);
+  }
+  /* The host half paints the boot canvas; the page itself must stay clear so
+     the wallpaper shows through the theme's translucent panels. The dark rule
+     repeats the attribute selector because the host's boot stylesheet uses it
+     too, and (0,1,1) would outrank a plain (0,0,2) here. */
+  html body,
+  html body[data-ds-dark-theme] {
+    background: transparent;
   }
 `
+
+/**
+ * Stack the skin's token layer on the active theme.
+ * @param ctx - client Context owning the theme service.
+ * @param value - opacities to resolve into the two surface tokens.
+ * @returns the disposer removing the layer this call registered.
+ */
+function applyTokens(ctx: Context, value: SkinSettings): () => void {
+  return ctx.theme.overrideTokens('shell-skin', {
+    '--dsw-alias-bg-base': {
+      light: rgba('255, 255, 255', value.lightOpacity),
+      dark: rgba('12, 14, 20', value.darkOpacity),
+    },
+    '--dsw-specific-sidebar-fill': {
+      light: rgba('246, 247, 249', sidebarOpacity(value.lightOpacity)),
+      dark: rgba('18, 20, 28', sidebarOpacity(value.darkOpacity)),
+    },
+  })
+}
 
 /**
  * Register the splash into the frame-wide overlay seat. `slots.inject` waits
@@ -139,26 +242,59 @@ const SKIN_CSS = `
  * @param ctx - the client Context.
  */
 export function apply(ctx: Context): void {
-  ctx.slots.inject('shell.overlay', () => ctx.slots.register(
-    { name: 'shell.overlay', id: 'shell-skin.splash' },
-    Splash,
-  ))
+  if (settings.splash) {
+    ctx.slots.inject('shell.overlay', () => ctx.slots.register(
+      { name: 'shell.overlay', id: 'shell-skin.splash' },
+      Splash,
+    ))
+  }
+  ctx.slots.inject('plugins.row.config', () => ctx.slots.register({
+    name: 'plugins.row.config',
+    key: 'dsh-plugin-shell-skin#shell-skin',
+    inject: () => ({
+      // Preview during a drag: repaint locally, without a Host round trip.
+      // The release still persists once.
+      preview: (patch: Partial<SkinSettings>) => { applyNow({ ...currentValues, ...patch }) },
+    }),
+  }, SkinSettingsRow))
   ctx.effect(() => {
     const style = document.createElement('style')
     style.textContent = SKIN_CSS
     document.head.appendChild(style)
     return () => style.remove()
   })
-  ctx.effect(() => 
-    ctx.theme.overrideTokens('shell-skin', {
-      '--dsw-alias-bg-base': {
-        light: 'rgba(255, 255, 255, 0.80)',
-        dark: 'rgba(12, 14, 20, 0.55)',
-      },
-      '--dsw-specific-sidebar-fill': {
-        light: 'rgba(246, 247, 249, 0.78)',
-        dark: 'rgba(18, 20, 28, 0.45)',
-      },
-    })
-  )
+  // One live token layer: previews and persisted values both land here, and
+  // the newest registration replaces the previous layer for the same source.
+  let currentValues = settings
+  let disposeTokens: (() => void) | undefined
+  const applyNow = (next: SkinSettings): void => {
+    currentValues = next
+    disposeTokens?.()
+    disposeTokens = applyTokens(ctx, next)
+    // Boot colours stay visible after mount: they sit behind the wallpaper and
+    // show while it decodes. Inline variables make them the live channel.
+    const root = document.documentElement
+    root.style.setProperty('--shell-skin-boot-light', next.bootColorLight)
+    root.style.setProperty('--shell-skin-boot-dark', next.bootColorDark)
+  }
+
+  ctx.effect(() => {
+    applyNow(settings)
+
+    const forms = ctx.get('configForms') as ConfigFormsLike | undefined
+    if (forms === undefined) return () => { disposeTokens?.() }
+
+    const form = forms.get(SETTINGS_NAMESPACE)
+    const sync = (): void => {
+      const value = form.getSnapshot().value
+      if (value === undefined) return
+      applyNow({ ...currentValues, ...value })
+    }
+    sync()
+    const off = form.subscribe(sync)
+    return () => {
+      off()
+      disposeTokens?.()
+    }
+  })
 }

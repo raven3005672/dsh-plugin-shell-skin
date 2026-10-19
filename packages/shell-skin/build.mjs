@@ -26,6 +26,7 @@ await build({
   format: 'esm',
   platform: 'node',
   target: 'node22',
+  external: ['@deepseek-ai/schemastery'],
   logLevel: 'warning',
 })
 
@@ -39,7 +40,11 @@ await build({
   platform: 'browser',
   target: 'es2022',
   jsx: 'automatic',
-  external: ['react', 'react/jsx-runtime', 'react-dom', 'react-dom/client'],
+  external: [
+    'react', 'react/jsx-runtime', 'react-dom', 'react-dom/client',
+    // Shared shell primitives: seeded in the platform module table.
+    '@deepseek-ai/dsh-client-ui-primitives',
+  ],
   loader: { '.jpg': 'dataurl', '.png': 'dataurl', '.webp': 'dataurl' },
   logLevel: 'warning',
 })
