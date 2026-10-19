@@ -35,6 +35,10 @@ interface SkinSettings {
   bootColorLight: string
   /** Colour behind the wallpaper in the dark palette. */
   bootColorDark: string
+  /** Use the image stored in this browser. */
+  customWallpaper: boolean
+  /** Fall back to the artwork shipped with the plugin. */
+  bundledWallpaper: boolean
 }
 
 const FALLBACK_SETTINGS: SkinSettings = {
@@ -43,6 +47,8 @@ const FALLBACK_SETTINGS: SkinSettings = {
   darkOpacity: 0.55,
   bootColorLight: '#ffffff',
   bootColorDark: '#0c0f15',
+  customWallpaper: false,
+  bundledWallpaper: true,
 }
 
 /** Read `__SHELL_SKIN__`, falling back when the row is mounted without a host injection. */
@@ -54,6 +60,8 @@ function readSettings(): SkinSettings {
     darkOpacity: injected?.darkOpacity ?? FALLBACK_SETTINGS.darkOpacity,
     bootColorLight: injected?.bootColorLight ?? FALLBACK_SETTINGS.bootColorLight,
     bootColorDark: injected?.bootColorDark ?? FALLBACK_SETTINGS.bootColorDark,
+    customWallpaper: injected?.customWallpaper ?? FALLBACK_SETTINGS.customWallpaper,
+    bundledWallpaper: injected?.bundledWallpaper ?? FALLBACK_SETTINGS.bundledWallpaper,
   }
 }
 
@@ -251,12 +259,58 @@ function applyTokens(ctx: Context, value: SkinSettings): () => void {
  * @param ctx - the client Context.
  */
 export function apply(ctx: Context): void {
+  // Wallpaper precedence: the stored image when the user asks for it, else the
+  // bundled artwork when that is on, else no image at all (boot colour only).
+  let storedWallpaperUrl: string | undefined
+  let currentValues = settings
+  let disposeTokens: (() => void) | undefined
+
+  /** Drop the object URL backing the stored image. */
+  const releaseWallpaper = (): void => {
+    if (storedWallpaperUrl === undefined) return
+    URL.revokeObjectURL(storedWallpaperUrl)
+    storedWallpaperUrl = undefined
+  }
+
+  /** Apply the wallpaper the current settings ask for. */
+  const applyWallpaper = (): void => {
+    const root = document.documentElement
+    if (currentValues.customWallpaper && storedWallpaperUrl !== undefined) {
+      root.style.setProperty('--shell-skin-wallpaper', `url("${storedWallpaperUrl}")`)
+      return
+    }
+    if (currentValues.bundledWallpaper) {
+      root.style.removeProperty('--shell-skin-wallpaper')
+      return
+    }
+    root.style.setProperty('--shell-skin-wallpaper', 'none')
+  }
+
+  /**
+   * Apply every visual setting at once: token layer, boot colours, wallpaper.
+   * @param next - the settings to make current.
+   */
+  const applyNow = (next: SkinSettings): void => {
+    currentValues = next
+    disposeTokens?.()
+    disposeTokens = applyTokens(ctx, next)
+    // Boot colours stay visible after mount: they sit behind the wallpaper and
+    // show while it decodes. Inline variables make them the live channel.
+    const root = document.documentElement
+    root.style.setProperty('--shell-skin-boot-light', next.bootColorLight)
+    root.style.setProperty('--shell-skin-boot-dark', next.bootColorDark)
+    applyWallpaper()
+  }
+
+  applyNow(settings)
+
   if (settings.splash) {
     ctx.slots.inject('shell.overlay', () => ctx.slots.register(
       { name: 'shell.overlay', id: 'shell-skin.splash' },
       Splash,
     ))
   }
+
   ctx.slots.inject('plugins.row.config', () => ctx.slots.register({
     name: 'plugins.row.config',
     key: 'dsh-plugin-shell-skin#shell-skin',
@@ -268,63 +322,38 @@ export function apply(ctx: Context): void {
       // browser's IndexedDB and only its Blob URL is applied.
       setWallpaper: async (file: File) => {
         await saveWallpaper(file)
-        applyWallpaper(URL.createObjectURL(file))
+        releaseWallpaper()
+        storedWallpaperUrl = URL.createObjectURL(file)
+        applyWallpaper()
       },
       clearWallpaper: async () => {
         await clearStoredWallpaper()
-        applyWallpaper(undefined)
+        releaseWallpaper()
+        applyWallpaper()
       },
     }),
   }, SkinSettingsRow))
+
   ctx.effect(() => {
     const style = document.createElement('style')
     style.textContent = SKIN_CSS
     document.head.appendChild(style)
     return () => style.remove()
   })
-  // One live token layer: previews and persisted values both land here, and
-  // the newest registration replaces the previous layer for the same source.
-  let wallpaperUrl: string | undefined
-  const applyWallpaper = (url: string | undefined): void => {
-    const root = document.documentElement
-    if (wallpaperUrl !== undefined) {
-      URL.revokeObjectURL(wallpaperUrl)
-      wallpaperUrl = undefined
-    }
-    if (url === undefined) {
-      root.style.removeProperty('--shell-skin-wallpaper')
-      return
-    }
-    wallpaperUrl = url
-    root.style.setProperty('--shell-skin-wallpaper', `url("${url}")`)
-  }
-
-  let currentValues = settings
-  let disposeTokens: (() => void) | undefined
-  const applyNow = (next: SkinSettings): void => {
-    currentValues = next
-    disposeTokens?.()
-    disposeTokens = applyTokens(ctx, next)
-    // Boot colours stay visible after mount: they sit behind the wallpaper and
-    // show while it decodes. Inline variables make them the live channel.
-    const root = document.documentElement
-    root.style.setProperty('--shell-skin-boot-light', next.bootColorLight)
-    root.style.setProperty('--shell-skin-boot-dark', next.bootColorDark)
-  }
 
   // The chosen wallpaper outlives the document as a Blob, so it comes back on
   // every load; the CSS variable only carries its current object URL.
   ctx.effect(() => {
     let live = true
     void loadWallpaper().then(blob => {
-      if (live && blob !== undefined) applyWallpaper(URL.createObjectURL(blob))
-    }).catch(() => { /* storage refused the read; the bundled wallpaper stays */ })
-    return () => { live = false; applyWallpaper(undefined) }
+      if (!live || blob === undefined) return
+      storedWallpaperUrl = URL.createObjectURL(blob)
+      applyWallpaper()
+    }).catch(() => { /* storage refused the read; the settings choose the fallback */ })
+    return () => { live = false; releaseWallpaper() }
   })
 
   ctx.effect(() => {
-    applyNow(settings)
-
     const forms = ctx.get('configForms') as ConfigFormsLike | undefined
     if (forms === undefined) return () => { disposeTokens?.() }
 

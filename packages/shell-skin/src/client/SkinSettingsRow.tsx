@@ -22,6 +22,10 @@ export interface SkinConfigValues {
   bootColorLight: string
   /** Pre-plugin canvas color in the dark palette. */
   bootColorDark: string
+  /** Use the image stored in this browser. */
+  customWallpaper: boolean
+  /** Fall back to the artwork shipped with the plugin. */
+  bundledWallpaper: boolean
 }
 
 /** One settings write the Plugins page accepts. */
@@ -74,6 +78,8 @@ const DEFAULTS: SkinConfigValues = {
   darkOpacity: 0.55,
   bootColorLight: '#ffffff',
   bootColorDark: '#0c0f15',
+  customWallpaper: false,
+  bundledWallpaper: true,
 }
 
 /**
@@ -131,6 +137,8 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
     try {
       setWallpaperError(undefined)
       await setWallpaper(file)
+      write('customWallpaper', true)
+      commit()
     } catch (error) {
       setWallpaperError(error instanceof Error ? error.message : 'Could not store that image.')
     }
@@ -246,34 +254,65 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
         />
       </label>
 
-      <div style={row}>
+      <label style={row}>
         <span style={label}>
-          Wallpaper
+          Custom wallpaper
           <br />
-          <span style={hint}>Kept in this browser only. Not synced, and tied to this address.</span>
+          <span style={hint}>Use the image you picked in this browser. Off falls back below.</span>
         </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 'none' }}>
-          <input
-            type="file"
-            accept="image/*"
-            disabled={disabled}
-            style={{ maxWidth: 190 }}
-            onChange={event => {
-              void pickWallpaper(event.target.files?.[0])
-              event.target.value = ''
-            }}
-          />
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={disabled}
-            style={{ whiteSpace: 'nowrap' }}
-            onClick={() => { void resetWallpaper() }}
-          >
-            Use built-in
-          </Button>
+        <Switch
+          checked={value.customWallpaper}
+          label="Custom wallpaper"
+          disabled={disabled}
+          onChange={next => { write('customWallpaper', next); commit() }}
+        />
+      </label>
+
+      <label style={row}>
+        <span style={label}>
+          Bundled wallpaper
+          <br />
+          <span style={hint}>Use the artwork shipped with the plugin when no custom image applies.</span>
         </span>
-      </div>
+        <Switch
+          checked={value.bundledWallpaper}
+          label="Bundled wallpaper"
+          disabled={disabled}
+          onChange={next => { write('bundledWallpaper', next); commit() }}
+        />
+      </label>
+
+      {value.customWallpaper ? (
+        <div style={row}>
+          <span style={label}>
+            Image
+            <br />
+            <span style={hint}>Kept in this browser only. Not synced, and tied to this address.</span>
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 'none' }}>
+            <input
+              type="file"
+              accept="image/*"
+              disabled={disabled}
+              style={{ maxWidth: 190 }}
+              onChange={event => {
+                void pickWallpaper(event.target.files?.[0])
+                event.target.value = ''
+              }}
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={disabled}
+              style={{ whiteSpace: 'nowrap' }}
+              onClick={() => { void resetWallpaper() }}
+            >
+              Remove image
+            </Button>
+          </span>
+        </div>
+      ) : null}
+
       {wallpaperError === undefined ? null : <p style={hint}>{wallpaperError}</p>}
 
       {state.writable ? null : <p style={hint}>This profile does not accept settings edits.</p>}

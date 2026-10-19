@@ -27,7 +27,11 @@ export interface Config {
   /** Canvas color painted before the app mounts, in the light palette. */
   bootColorLight: Volatile<string>
   /** Canvas color painted before the app mounts, in the dark palette. */
-  bootColorDark: Volatile<string> 
+  bootColorDark: Volatile<string>
+  /** Use the wallpaper the user uploaded in this browser. */
+  customWallpaper: Volatile<boolean>
+  /** Fall back to the artwork shipped with the plugin. */
+  bundledWallpaper: Volatile<boolean>
 }
 
 export const Config = z.object({
@@ -36,6 +40,8 @@ export const Config = z.object({
   darkOpacity: z.number().min(0).max(1).default(0.55).volatile(),
   bootColorLight: z.string().default('#ffffff').volatile(),
   bootColorDark: z.string().default('#0c0f15').volatile(),
+  customWallpaper: z.boolean().default(false).volatile(),
+  bundledWallpaper: z.boolean().default(true).volatile(),
 })
 
 /**
@@ -70,6 +76,8 @@ export function apply(ctx: Context, config: Config): void {
         darkOpacity: config.darkOpacity.get(),
         bootColorLight: config.bootColorLight.get(),
         bootColorDark: config.bootColorDark.get(),
+        customWallpaper: config.customWallpaper.get(),
+        bundledWallpaper: config.bundledWallpaper.get(),
       },
     })
   })
