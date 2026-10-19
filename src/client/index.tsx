@@ -215,7 +215,11 @@ function Splash(): ReactElement | null {
 }
 
 const SKIN_CSS = `
-  html {
+  html,
+  /* Desktop: the shell's own rule is html[data-platform=darwin]{background:transparent},
+     and its shorthand outranks a bare html selector, so repeat the paint with the
+     same attribute plus :root to win the cascade. */
+  html[data-platform='darwin']:root {
     --shell-skin-boot-light: ${settings.bootColorLight};
     --shell-skin-boot-dark: ${settings.bootColorDark};
     background-color: var(--shell-skin-boot-light);
@@ -226,7 +230,8 @@ const SKIN_CSS = `
     background-attachment: fixed;
   }
   /* The palette flag lives on <body>, so the colour is selected from html. */
-  html:has(body[data-ds-dark-theme]) {
+  html:has(body[data-ds-dark-theme]),
+  html[data-platform='darwin']:root:has(body[data-ds-dark-theme]) {
     background-color: var(--shell-skin-boot-dark);
   }
   /* The host half paints the boot canvas; the page itself must stay clear so
