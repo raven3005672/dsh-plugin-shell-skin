@@ -7,15 +7,6 @@ settings:
 importers:
 
   .:
-    devDependencies:
-      esbuild:
-        specifier: ^0.25.0
-        version: 0.25.12
-      typescript:
-        specifier: ^5.9.0
-        version: 5.9.3
-
-  packages/shell-skin:
     dependencies:
       '@deepseek-ai/schemastery':
         specifier: ^3.18.5
@@ -66,6 +57,9 @@ importers:
       react-dom:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
 
 packages:
 

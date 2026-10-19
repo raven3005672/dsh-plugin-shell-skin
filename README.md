@@ -1,72 +1,106 @@
-# dsh-plugins
+# dsh-plugin-shell-skin
 
-DeepSeek Harness plugins, one package per plugin.
+An unofficial skin for the DeepSeek Harness Web UI: a startup flourish, a
+wallpaper behind the panels, and one settings surface for both.
 
-| Package | What it does |
+Everything runs in the browser half. The plugin never touches Sessions, model
+requests, tools, or the host filesystem.
+
+## What it adds
+
+| Feature | Behaviour |
 |---|---|
-| [`packages/shell-skin`](packages/shell-skin) | Browser-only skin: startup flourish, wallpaper (bundled or uploaded), panel opacity, first-paint colours |
+| Startup splash | A full-screen flourish in `shell.overlay` that fades out after about 1.5s |
+| Wallpaper | The artwork bundled with the package, or an image you pick in this browser |
+| Panel opacity | How much wallpaper shows through the sidebar and panels, per palette |
+| Boot colour | The colour painted behind the wallpaper, including the first frame |
 
-## Requirements
-
-- Node `^22.19.0 || >=24`
-- pnpm 11 (a standalone `pnpm` on `PATH`; see the note under Commands)
-
-## Commands
-
-| Command | What it does |
-|---|---|
-| `pnpm install` | install workspace dependencies |
-| `pnpm build` | build every package (`lib/index.js` + `lib/client.js`) |
-| `pnpm typecheck` | type-check every package |
-| `pnpm smoke` | load each built client bundle without a browser and assert its registrations |
-
-> Run these with `pnpm`, not `corepack pnpm`: the scripts delegate to each
-> package through `pnpm -r`, and a nested `pnpm` invoked under corepack is
-> refused with a version-mismatch error.
-
-## Trying a plugin against a source checkout
-
-From the `deepseek-harness` checkout, with the plugin built:
+## Install
 
 ```sh
-pnpm dsh web --patch ../dsh-plugins/dev.patch.yml
+dsh plugin --profile web add dsh-plugin-shell-skin
 ```
 
-`dev.patch.yml` mounts `packages/shell-skin/lib/index.js` by absolute path, so no
-profile install is needed while iterating. The overlay is read at boot; rebuild
-after editing and restart when the host half changed.
+In the desktop app, type `dsh-plugin-shell-skin` into the install field on the
+Plugins page. Restart the app afterwards: a running process keeps the previously
+loaded plugin tree in memory.
 
-## Installing into a profile
+## Settings
+
+Open **Plugins**, select the bundle, and use the configure control on the
+`dsh-plugin-shell-skin` row:
+
+| Setting | Applies |
+|---|---|
+| Startup splash | Next page load |
+| Light / dark opacity | Immediately while dragging, committed on release |
+| Boot colour, light / dark | Immediately |
+| Custom wallpaper | Immediately |
+| Bundled wallpaper | Immediately |
+| Image | Immediately after the file is stored |
+
+Wallpaper precedence: a custom image when that switch is on and an image is
+stored, otherwise the bundled artwork when that switch is on, otherwise no image
+at all (the boot colour shows through).
+
+## Where the uploaded image lives
+
+The picked file is stored in this browser's IndexedDB and applied through a Blob
+URL. It is never uploaded to the Host.
+
+- Bound to the page origin: another port or another browser does not share it.
+- Not synchronized across devices.
+- `Remove image` clears it and restores the bundled wallpaper or the bare boot
+  colour.
+
+## Limitations
+
+- The splash switch is not live: it changes slot registration, so a reload is
+  needed.
+- On the Electron desktop app the sidebar keeps the platform's vibrancy mix, so
+  the wallpaper reads more transparent there than in the browser.
+- The settings page copy follows `ctx.locale`; the plugin card title and
+  description come from `locale/<lang>.json`.
+
+## Development
 
 ```sh
-cd ~/github/deepseek-harness
-pnpm dsh plugin --profile <name> add ../dsh-plugins/packages/shell-skin
+pnpm install
+pnpm build           # lib/index.js + lib/client.js
+pnpm typecheck
+pnpm smoke           # load the built client bundle without a browser
 ```
 
-That installs the bundle into `~/.dsh/profiles/<name>` and applies its
-`cordis.patch.yml`; the plugin then appears in the Plugins page.
+Mount the checkout into a running Harness from the `deepseek-harness` directory:
+
+```sh
+pnpm dsh web --patch ../dsh-plugin-shell-skin/dev.patch.yml
+```
+
+The overlay mounts `lib/index.js` by absolute path, so no profile install is
+needed while iterating. Rebuild after edits; restart when the host half or the
+overlay changed.
 
 ## Repository layout
 
 ```
 .
-├── scripts/build-plugin.mjs   # the shared two-face build for every package
-├── tsconfig.base.json         # editor/type-check baseline
-├── dev.patch.yml              # local overlay that mounts the packages by path
-└── packages/<name>/           # one plugin per directory
-    ├── package.json           # dsh.client + dsh.bundle manifests, icon, locale
-    ├── cordis.patch.yml       # the layer a profile install applies
-    ├── build.mjs              # three lines: delegates to scripts/build-plugin.mjs
-    ├── icon.svg               # plugin-card artwork
-    ├── locale/<lang>.json     # localized card title and description
-    ├── assets/                # artwork inlined into the client bundle
-    ├── scripts/smoke.mjs      # load-time contract test
-    └── src/
-        ├── index.ts           # host half (Loader seat / config / injections)
-        └── client/            # browser half (slots, theme, settings page)
+├── package.json        # dsh.bundle + dsh.client manifests, icon, locale wiring
+├── cordis.patch.yml    # the profile layer an install applies
+├── dev.patch.yml       # local overlay mounting this checkout by path
+├── tsconfig.json
+├── scripts/
+│   ├── build.mjs       # two-face build: host ESM + browser factory bundle
+│   └── smoke.mjs       # load-time contract test, no browser needed
+├── assets/             # artwork inlined into the client bundle
+├── locale/<lang>.json  # localized card title and description
+├── icon.svg
+└── src/
+    ├── index.ts        # host half: volatile config, boot injection
+    └── client/         # browser half: splash, theme layer, settings page
 ```
 
 ## Status
 
-The plugins are not published yet: no npm release and no market index. The
-distribution plan is a Git-source market index first, npm later if needed.
+Not published yet: no npm release and no market index. The planned first
+distribution is a Git-source market index.

@@ -16,7 +16,7 @@
  */
 import { build } from 'esbuild'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 /** Modules the browser shell seeds; never bundle these. */
@@ -31,13 +31,16 @@ const PLATFORM_EXTERNAL = [
 /** Modules the Host composition provides. */
 const HOST_EXTERNAL = ['@deepseek-ai/schemastery']
 
+/** The package this script builds: the repository root. */
+const defaultRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+
 /**
  * Build both faces of a plugin package.
  * @param packageDir - absolute path or directory URL of the package root.
  * @param options - optional extra externals per face.
  * @returns the package name that was built.
  */
-export async function buildPlugin(packageDir, options = {}) {
+export async function buildPlugin(packageDir = defaultRoot, options = {}) {
   const root = resolve(typeof packageDir === 'string' ? packageDir : fileURLToPath(packageDir))
   const pkg = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
   const outdir = join(root, 'lib')
@@ -87,3 +90,6 @@ ${body}
   console.log(`built ${pkg.name}: lib/index.js, lib/client.js`)
   return pkg.name
 }
+
+// Runnable as a script; the exported function stays for a future build hook.
+if (process.argv[1] === fileURLToPath(import.meta.url)) await buildPlugin()
