@@ -135,6 +135,14 @@ pnpm dsh web --patch ../dsh-plugin-shell-skin/dev.patch.yml
 
 改了 client 半边刷新页面即可；改了 host 半边或 overlay 需要重启。
 
+## 素材与版权声明
+
+插件内置的默认壁纸图片**来自网络**，仅用于演示和装饰目的，作者未持有该图片的明确授权，版权归原作者所有。
+
+如果你是版权方，认为这张图片的使用侵犯了你的权益，请通过 [Issues](https://github.com/raven3005672/dsh-plugin-shell-skin/issues) 联系作者，附上图片说明与权利依据。确认后我们会尽快替换或移除该素材，并发布新版本。
+
+另外说明：用户自行上传的壁纸只保存在本地浏览器（IndexedDB），不会随插件分发，也不会上传到任何服务器；由用户自行确保其上传内容的合法性。
+
 ## 许可
 
 [MIT](LICENSE)
