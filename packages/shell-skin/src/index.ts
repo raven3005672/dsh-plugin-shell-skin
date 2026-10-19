@@ -32,7 +32,7 @@ export interface Config {
 
 export const Config = z.object({
   splash: z.boolean().default(true).volatile(),
-  lightOpacity: z.number().min(0).max(1).default(0.8).volatile(),
+  lightOpacity: z.number().min(0).max(1).default(0.85).volatile(),
   darkOpacity: z.number().min(0).max(1).default(0.55).volatile(),
   bootColorLight: z.string().default('#ffffff').volatile(),
   bootColorDark: z.string().default('#0c0f15').volatile(),

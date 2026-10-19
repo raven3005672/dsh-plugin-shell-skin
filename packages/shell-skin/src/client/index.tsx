@@ -38,7 +38,7 @@ interface SkinSettings {
 
 const FALLBACK_SETTINGS: SkinSettings = {
   splash: true,
-  lightOpacity: 0.8,
+  lightOpacity: 0.85,
   darkOpacity: 0.55,
   bootColorLight: '#ffffff',
   bootColorDark: '#0c0f15',
@@ -212,6 +212,14 @@ const SKIN_CSS = `
      too, and (0,1,1) would outrank a plain (0,0,2) here. */
   html body,
   html body[data-ds-dark-theme] {
+    background: transparent;
+  }
+  /* The conversation column paints the same base token again above the frame,
+     so its wallpaper reads double-tinted next to a global panel. Neutralise
+     that layer; the phase attribute is the only stable hook it exposes. */
+  html [data-phase='hero'],
+  html [data-phase='active'],
+  html [data-phase='settling'] {
     background: transparent;
   }
 `
