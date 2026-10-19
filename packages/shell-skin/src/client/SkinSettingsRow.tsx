@@ -7,6 +7,7 @@
  * of that snapshot; writes go back through `form.mutate`.
  */
 import { Button, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
+import { en, type SkinKey } from './locales.ts'
 import { useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 
@@ -54,6 +55,8 @@ export interface SkinConfigState {
 export interface SkinSettingsRowProps {
   /** `summary` fills the description line; `page` renders the body. */
   view: 'summary' | 'page'
+  /** Namespace translator supplied by the slot registration. */
+  t?(key: SkinKey): string
   /** Repaint the skin without persisting, used while a control is dragged. */
   preview?(patch: Partial<SkinConfigValues>): void
   /** Store a picked image in this browser and show it. */
@@ -87,10 +90,12 @@ const DEFAULTS: SkinConfigValues = {
  * @param props - owner props supplied by the Plugins page.
  * @returns the description line, the form, or null while nothing is known.
  */
-export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpaper }: SkinSettingsRowProps): ReactElement | null {
+export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpaper, t }: SkinSettingsRowProps): ReactElement | null {
   // Dragging a range fires `change` per pixel. Staging the preview locally and
   // committing once on release keeps the Host at one write per gesture instead
   // of one per frame.
+  /** Translate a key, falling back to the English dictionary outside a locale host. */
+  const copy = (key: SkinKey): string => t?.(key) ?? en[key]
   const [draft, setDraft] = useState<Partial<SkinConfigValues>>({})
   const pending = useRef<Partial<SkinConfigValues>>({})
   const commitTimer = useRef<number | undefined>(undefined)
@@ -104,7 +109,7 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
   if (view === 'summary') {
     return (
       <span>
-        {`Splash ${value.splash ? 'on' : 'off'} · light ${value.lightOpacity} · dark ${value.darkOpacity}`}
+        {`${copy(value.splash ? 'summary.splashOn' : 'summary.splashOff')} · ${copy('summary.light')} ${value.lightOpacity} · ${copy('summary.dark')} ${value.darkOpacity}`}
       </span>
     )
   }
@@ -131,7 +136,7 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
   const pickWallpaper = async (file: File | undefined): Promise<void> => {
     if (file === undefined || setWallpaper === undefined) return
     if (!file.type.startsWith('image/')) {
-      setWallpaperError('Choose an image file.')
+      setWallpaperError(copy('image.errorType'))
       return
     }
     try {
@@ -140,7 +145,7 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
       write('customWallpaper', true)
       commit()
     } catch (error) {
-      setWallpaperError(error instanceof Error ? error.message : 'Could not store that image.')
+      setWallpaperError(error instanceof Error ? error.message : copy('image.errorStore'))
     }
   }
   const resetWallpaper = async (): Promise<void> => {
@@ -149,7 +154,7 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
       setWallpaperError(undefined)
       await clearWallpaper()
     } catch (error) {
-      setWallpaperError(error instanceof Error ? error.message : 'Could not clear the image.')
+      setWallpaperError(error instanceof Error ? error.message : copy('image.errorClear'))
     }
   }
   const disabled = !state.writable
@@ -158,13 +163,13 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
     <div style={{ display: 'grid', gap: 4, maxWidth: 520 }}>
       <label style={row}>
         <span style={label}>
-          Startup splash
+          {copy('splash.title')}
           <br />
-          <span style={hint}>Play the opening flourish on every page load.</span>
+          <span style={hint}>{copy('splash.description')}</span>
         </span>
         <Switch
           checked={value.splash}
-          label="Startup splash"
+          label={copy('splash.title')}
           disabled={disabled}
           onChange={next => { write('splash', next); commit() }}
         />
@@ -172,9 +177,9 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
 
       <label style={row}>
         <span style={label}>
-          Light opacity
+          {copy('lightOpacity.title')}
           <br />
-          <span style={hint}>Panel opacity over the wallpaper, 0 is clear and 1 is opaque.</span>
+          <span style={hint}>{copy('lightOpacity.description')}</span>
         </span>
         <input
           type="range"
@@ -196,9 +201,9 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
 
       <label style={row}>
         <span style={label}>
-          Dark opacity
+          {copy('darkOpacity.title')}
           <br />
-          <span style={hint}>The dark palette needs a lower value for the same visible contrast.</span>
+          <span style={hint}>{copy('darkOpacity.description')}</span>
         </span>
         <input
           type="range"
@@ -220,9 +225,9 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
 
       <label style={row}>
         <span style={label}>
-          Boot color, light
+          {copy('bootLight.title')}
           <br />
-          <span style={hint}>Painted before the app mounts, so the first frame is not white.</span>
+          <span style={hint}>{copy('bootLight.description')}</span>
         </span>
         <input
           type="color"
@@ -238,9 +243,9 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
 
       <label style={row}>
         <span style={label}>
-          Boot color, dark
+          {copy('bootDark.title')}
           <br />
-          <span style={hint}>The same first frame for the dark palette.</span>
+          <span style={hint}>{copy('bootDark.description')}</span>
         </span>
         <input
           type="color"
@@ -256,13 +261,13 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
 
       <label style={row}>
         <span style={label}>
-          Custom wallpaper
+          {copy('custom.title')}
           <br />
-          <span style={hint}>Use the image you picked in this browser. Off falls back below.</span>
+          <span style={hint}>{copy('custom.description')}</span>
         </span>
         <Switch
           checked={value.customWallpaper}
-          label="Custom wallpaper"
+          label={copy('custom.title')}
           disabled={disabled}
           onChange={next => { write('customWallpaper', next); commit() }}
         />
@@ -270,13 +275,13 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
 
       <label style={row}>
         <span style={label}>
-          Bundled wallpaper
+          {copy('bundled.title')}
           <br />
-          <span style={hint}>Use the artwork shipped with the plugin when no custom image applies.</span>
+          <span style={hint}>{copy('bundled.description')}</span>
         </span>
         <Switch
           checked={value.bundledWallpaper}
-          label="Bundled wallpaper"
+          label={copy('bundled.title')}
           disabled={disabled}
           onChange={next => { write('bundledWallpaper', next); commit() }}
         />
@@ -285,9 +290,9 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
       {value.customWallpaper ? (
         <div style={row}>
           <span style={label}>
-            Image
+            {copy('image.title')}
             <br />
-            <span style={hint}>Kept in this browser only. Not synced, and tied to this address.</span>
+            <span style={hint}>{copy('image.description')}</span>
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 'none' }}>
             <input
@@ -307,7 +312,7 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
               style={{ whiteSpace: 'nowrap' }}
               onClick={() => { void resetWallpaper() }}
             >
-              Remove image
+              {copy('image.remove')}
             </Button>
           </span>
         </div>
@@ -315,7 +320,7 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
 
       {wallpaperError === undefined ? null : <p style={hint}>{wallpaperError}</p>}
 
-      {state.writable ? null : <p style={hint}>This profile does not accept settings edits.</p>}
+      {state.writable ? null : <p style={hint}>{copy('profile.locked')}</p>}
     </div>
   )
 }

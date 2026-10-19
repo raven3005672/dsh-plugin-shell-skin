@@ -1,0 +1,65 @@
+/**
+ * `shellSkin` namespace dictionaries. The Chinese map is the key-set source of
+ * truth; the English map must cover exactly the same keys.
+ */
+
+/** Simplified Chinese copy. */
+export const zh = {
+  'splash.title': '启动动画',
+  'splash.description': '每次打开页面时播放入场动画',
+  'lightOpacity.title': '浅色透明度',
+  'lightOpacity.description': '面板叠在壁纸上的不透明度，0 为全透明，1 为不透明',
+  'darkOpacity.title': '深色透明度',
+  'darkOpacity.description': '深色配色需要更低的值才能获得同样的可见对比',
+  'bootLight.title': '启动底色（浅色）',
+  'bootLight.description': '应用挂载前绘制的颜色，避免首帧发白',
+  'bootDark.title': '启动底色（深色）',
+  'bootDark.description': '深色配色下的首帧底色',
+  'custom.title': '自定义壁纸',
+  'custom.description': '使用你在本浏览器中选择的图片；关闭后回落到下一项',
+  'bundled.title': '内置壁纸',
+  'bundled.description': '没有可用的自定义图片时，使用插件自带的壁纸',
+  'image.title': '图片',
+  'image.description': '仅保存在本浏览器，不跨设备同步，且与当前地址绑定',
+  'image.remove': '移除图片',
+  'image.errorType': '请选择图片文件',
+  'image.errorStore': '无法保存这张图片',
+  'image.errorClear': '无法清除这张图片',
+  'profile.locked': '当前 profile 不接受设置修改',
+  'summary.splashOn': '动画开',
+  'summary.splashOff': '动画关',
+  'summary.light': '浅色',
+  'summary.dark': '深色',
+} satisfies Record<string, string>
+
+/** Key union of the `shellSkin` namespace. */
+export type SkinKey = keyof typeof zh
+
+/** English copy, checked complete against the Chinese key set. */
+export const en: Record<SkinKey, string> = {
+  'splash.title': 'Startup splash',
+  'splash.description': 'Play the opening flourish on every page load',
+  'lightOpacity.title': 'Light opacity',
+  'lightOpacity.description': 'Panel opacity over the wallpaper, 0 is clear and 1 is opaque',
+  'darkOpacity.title': 'Dark opacity',
+  'darkOpacity.description': 'The dark palette needs a lower value for the same visible contrast',
+  'bootLight.title': 'Boot color, light',
+  'bootLight.description': 'Painted before the app mounts, so the first frame is not white',
+  'bootDark.title': 'Boot color, dark',
+  'bootDark.description': 'The same first frame for the dark palette',
+  'custom.title': 'Custom wallpaper',
+  'custom.description': 'Use the image you picked in this browser; off falls back to the next row',
+  'bundled.title': 'Bundled wallpaper',
+  'bundled.description': 'Use the artwork shipped with the plugin when no custom image applies',
+  'image.title': 'Image',
+  'image.description': 'Kept in this browser only. Not synced, and tied to this address',
+  'image.remove': 'Remove image',
+  'image.errorType': 'Choose an image file',
+  'image.errorStore': 'Could not store that image',
+  'image.errorClear': 'Could not clear that image',
+  'profile.locked': 'This profile does not accept settings edits',
+  'summary.splashOn': 'splash on',
+  'summary.splashOff': 'splash off',
+  'summary.light': 'light',
+  'summary.dark': 'dark',
+}

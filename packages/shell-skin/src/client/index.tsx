@@ -8,20 +8,34 @@
  */
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-ui-theme/client'
-import type {} from '@deepseek-ai/dsh-client-ui-settings/client'  // ctx.theme
+import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import type {} from '@deepseek-ai/dsh-client-locale/client'
+import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
+import type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/client'  // ctx.theme
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { ReactElement } from 'react'
 import wallpaper from '../../assets/wallpaper.jpg'
+import { en, zh, type SkinKey } from './locales.ts'
 import { SkinSettingsRow } from './SkinSettingsRow.tsx'
 import { clearStoredWallpaper, loadWallpaper, saveWallpaper } from './wallpaper-store.ts'
 
 
+/** Copy namespace this plugin owns. */
+const LOCALE_NS = 'shellSkin'
+
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface LocaleNamespaceMap {
+    /** Row config page copy. */
+    shellSkin: SkinKey
+  }
+}
+
 /** Build the plugin's browser identity. */
 export const name = 'shell-skin'
 /** Services this plugin reads. */
-export const inject = ['slots', 'theme']
+export const inject = ['slots', 'theme', 'locale']
 
 /** Settings the host half injects into the boot HTML. */
 interface SkinSettings {
@@ -311,9 +325,12 @@ export function apply(ctx: Context): void {
     ))
   }
 
+  ctx.effect(() => ctx.locale.register(LOCALE_NS, { zh, en }))
+
   ctx.slots.inject('plugins.row.config', () => ctx.slots.register({
     name: 'plugins.row.config',
     key: 'dsh-plugin-shell-skin#shell-skin',
+    locale: LOCALE_NS,
     inject: () => ({
       // Preview during a drag: repaint locally, without a Host round trip.
       // The release still persists once.

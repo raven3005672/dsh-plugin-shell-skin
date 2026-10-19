@@ -27,7 +27,7 @@ const source = readFileSync(join(pkgRoot, 'lib/client.js'), 'utf8')
 
 // apply() injects its stylesheet through the DOM; a bare stub is enough here.
 globalThis.document = {
-  documentElement: { style: { setProperty() {} } },
+  documentElement: { style: { setProperty() {}, removeProperty() {} } },
   createElement: () => ({ textContent: '', remove() {} }),
   head: { appendChild() {} },
 }
@@ -46,11 +46,12 @@ function applyWith(settings) {
   globalThis.__SHELL_SKIN__ = settings
   const plugin = loadBundle()
   assert.equal(typeof plugin.apply, 'function', 'client plugin must export apply')
-  assert.deepEqual(plugin.inject, ['slots', 'theme'], 'inject must declare both services')
+  assert.deepEqual(plugin.inject, ['slots', 'theme', 'locale'], 'inject must declare its services')
 
   const calls = []
   plugin.apply({
     get: () => undefined,
+    locale: { register: () => () => {} },
     effect: execute => { calls.push('effect'); return execute() },
     slots: {
       inject: (slot, factory) => { calls.push(`inject:${slot}`); return factory() },
