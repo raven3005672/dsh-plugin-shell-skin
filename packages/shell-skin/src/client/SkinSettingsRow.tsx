@@ -252,17 +252,24 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
           <br />
           <span style={hint}>Kept in this browser only. Not synced, and tied to this address.</span>
         </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 'none' }}>
           <input
             type="file"
             accept="image/*"
             disabled={disabled}
+            style={{ maxWidth: 190 }}
             onChange={event => {
               void pickWallpaper(event.target.files?.[0])
               event.target.value = ''
             }}
           />
-          <Button size="sm" variant="outline" disabled={disabled} onClick={() => { void resetWallpaper() }}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={disabled}
+            style={{ whiteSpace: 'nowrap' }}
+            onClick={() => { void resetWallpaper() }}
+          >
             Use built-in
           </Button>
         </span>
