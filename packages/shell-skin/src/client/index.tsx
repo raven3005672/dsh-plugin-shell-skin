@@ -15,6 +15,7 @@ import { createPortal } from 'react-dom'
 import type { ReactElement } from 'react'
 import wallpaper from '../../assets/wallpaper.jpg'
 import { SkinSettingsRow } from './SkinSettingsRow.tsx'
+import { clearStoredWallpaper, loadWallpaper, saveWallpaper } from './wallpaper-store.ts'
 
 
 /** Build the plugin's browser identity. */
@@ -196,7 +197,7 @@ const SKIN_CSS = `
     --shell-skin-boot-light: ${settings.bootColorLight};
     --shell-skin-boot-dark: ${settings.bootColorDark};
     background-color: var(--shell-skin-boot-light);
-    background-image: url("${wallpaper}");
+    background-image: var(--shell-skin-wallpaper, url("${wallpaper}"));
     background-position: center;
     background-size: cover;
     background-repeat: no-repeat;
@@ -263,6 +264,16 @@ export function apply(ctx: Context): void {
       // Preview during a drag: repaint locally, without a Host round trip.
       // The release still persists once.
       preview: (patch: Partial<SkinSettings>) => { applyNow({ ...currentValues, ...patch }) },
+      // The custom wallpaper never reaches the Host: the file stays in this
+      // browser's IndexedDB and only its Blob URL is applied.
+      setWallpaper: async (file: File) => {
+        await saveWallpaper(file)
+        applyWallpaper(URL.createObjectURL(file))
+      },
+      clearWallpaper: async () => {
+        await clearStoredWallpaper()
+        applyWallpaper(undefined)
+      },
     }),
   }, SkinSettingsRow))
   ctx.effect(() => {
@@ -273,6 +284,21 @@ export function apply(ctx: Context): void {
   })
   // One live token layer: previews and persisted values both land here, and
   // the newest registration replaces the previous layer for the same source.
+  let wallpaperUrl: string | undefined
+  const applyWallpaper = (url: string | undefined): void => {
+    const root = document.documentElement
+    if (wallpaperUrl !== undefined) {
+      URL.revokeObjectURL(wallpaperUrl)
+      wallpaperUrl = undefined
+    }
+    if (url === undefined) {
+      root.style.removeProperty('--shell-skin-wallpaper')
+      return
+    }
+    wallpaperUrl = url
+    root.style.setProperty('--shell-skin-wallpaper', `url("${url}")`)
+  }
+
   let currentValues = settings
   let disposeTokens: (() => void) | undefined
   const applyNow = (next: SkinSettings): void => {
@@ -285,6 +311,16 @@ export function apply(ctx: Context): void {
     root.style.setProperty('--shell-skin-boot-light', next.bootColorLight)
     root.style.setProperty('--shell-skin-boot-dark', next.bootColorDark)
   }
+
+  // The chosen wallpaper outlives the document as a Blob, so it comes back on
+  // every load; the CSS variable only carries its current object URL.
+  ctx.effect(() => {
+    let live = true
+    void loadWallpaper().then(blob => {
+      if (live && blob !== undefined) applyWallpaper(URL.createObjectURL(blob))
+    }).catch(() => { /* storage refused the read; the bundled wallpaper stays */ })
+    return () => { live = false; applyWallpaper(undefined) }
+  })
 
   ctx.effect(() => {
     applyNow(settings)

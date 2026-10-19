@@ -6,7 +6,7 @@
  * resolved from the row's own namespace. Everything here is a controlled view
  * of that snapshot; writes go back through `form.mutate`.
  */
-import { Switch } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 
@@ -52,6 +52,10 @@ export interface SkinSettingsRowProps {
   view: 'summary' | 'page'
   /** Repaint the skin without persisting, used while a control is dragged. */
   preview?(patch: Partial<SkinConfigValues>): void
+  /** Store a picked image in this browser and show it. */
+  setWallpaper?(file: File): Promise<void>
+  /** Drop the stored image and fall back to the bundled wallpaper. */
+  clearWallpaper?(): Promise<void>
   /** Row settings face, absent while the namespace is not served. */
   form?: {
     state: SkinConfigState
@@ -77,7 +81,7 @@ const DEFAULTS: SkinConfigValues = {
  * @param props - owner props supplied by the Plugins page.
  * @returns the description line, the form, or null while nothing is known.
  */
-export function SkinSettingsRow({ view, form, preview }: SkinSettingsRowProps): ReactElement | null {
+export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpaper }: SkinSettingsRowProps): ReactElement | null {
   // Dragging a range fires `change` per pixel. Staging the preview locally and
   // committing once on release keeps the Host at one write per gesture instead
   // of one per frame.
@@ -116,6 +120,29 @@ export function SkinSettingsRow({ view, form, preview }: SkinSettingsRowProps): 
   const commitSoon = (): void => {
     window.clearTimeout(commitTimer.current)
     commitTimer.current = window.setTimeout(() => { commit() }, 350)
+  }
+  const [wallpaperError, setWallpaperError] = useState<string | undefined>(undefined)
+  const pickWallpaper = async (file: File | undefined): Promise<void> => {
+    if (file === undefined || setWallpaper === undefined) return
+    if (!file.type.startsWith('image/')) {
+      setWallpaperError('Choose an image file.')
+      return
+    }
+    try {
+      setWallpaperError(undefined)
+      await setWallpaper(file)
+    } catch (error) {
+      setWallpaperError(error instanceof Error ? error.message : 'Could not store that image.')
+    }
+  }
+  const resetWallpaper = async (): Promise<void> => {
+    if (clearWallpaper === undefined) return
+    try {
+      setWallpaperError(undefined)
+      await clearWallpaper()
+    } catch (error) {
+      setWallpaperError(error instanceof Error ? error.message : 'Could not clear the image.')
+    }
   }
   const disabled = !state.writable
 
@@ -218,6 +245,29 @@ export function SkinSettingsRow({ view, form, preview }: SkinSettingsRowProps): 
           }}
         />
       </label>
+
+      <div style={row}>
+        <span style={label}>
+          Wallpaper
+          <br />
+          <span style={hint}>Kept in this browser only. Not synced, and tied to this address.</span>
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <input
+            type="file"
+            accept="image/*"
+            disabled={disabled}
+            onChange={event => {
+              void pickWallpaper(event.target.files?.[0])
+              event.target.value = ''
+            }}
+          />
+          <Button size="sm" variant="outline" disabled={disabled} onClick={() => { void resetWallpaper() }}>
+            Use built-in
+          </Button>
+        </span>
+      </div>
+      {wallpaperError === undefined ? null : <p style={hint}>{wallpaperError}</p>}
 
       {state.writable ? null : <p style={hint}>This profile does not accept settings edits.</p>}
     </div>
