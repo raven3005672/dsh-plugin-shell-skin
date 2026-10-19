@@ -4,3 +4,9 @@
 - insert:
     - id: shell-skin
       name: /Users/yanglin/github/dsh-plugins/packages/shell-skin/lib/index.js
+      config:
+        splash: true
+        lightOpacity: 0.82
+        darkOpacity: 0.52
+        bootColorLight: '#ffffff'
+        bootColorDark: '#0c0f15'
