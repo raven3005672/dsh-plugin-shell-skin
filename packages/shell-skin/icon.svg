@@ -1,0 +1,17 @@
+<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="shell-skin-fill" x1="8" y1="8" x2="30" y2="28" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#67C7FE" />
+      <stop offset="1" stop-color="#3F77D8" />
+    </linearGradient>
+    <clipPath id="shell-skin-frame">
+      <rect x="7" y="9" width="22" height="18" rx="4" />
+    </clipPath>
+  </defs>
+  <rect x="7" y="9" width="22" height="18" rx="4" fill="url(#shell-skin-fill)" />
+  <g clip-path="url(#shell-skin-frame)">
+    <path d="M7 22.5L13.5 17.5L19 21L29 14V27H7V22.5Z" fill="#0F1115" fill-opacity="0.22" />
+    <rect x="7" y="9" width="12" height="18" fill="#FFFFFF" fill-opacity="0.42" />
+  </g>
+  <rect x="7" y="9" width="22" height="18" rx="4" stroke="url(#shell-skin-fill)" stroke-width="1.2" />
+</svg>
