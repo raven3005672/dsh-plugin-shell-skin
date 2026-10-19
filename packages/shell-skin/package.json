@@ -19,7 +19,8 @@
   ],
   "scripts": {
     "build": "node build.mjs",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "typecheck": "tsc -p tsconfig.json"
   },
   "dsh": {
     "client": {
@@ -52,5 +53,19 @@
   "dependencies": {
     "@deepseek-ai/schemastery": "^3.18.5"
   },
-  "icon": "icon.svg"
+  "icon": "icon.svg",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raven3005672/dsh-plugins.git",
+    "directory": "packages/shell-skin"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "dsh-plugin",
+    "theme",
+    "wallpaper",
+    "skin"
+  ],
+  "homepage": "https://github.com/raven3005672/dsh-plugins#readme"
 }
