@@ -82,7 +82,7 @@ function readSettings(): SkinSettings {
 const settings = readSettings()
 
 /** Settings namespace this plugin owns: the row id in the profile patch. */
-const SETTINGS_NAMESPACE = 'shell-skin'
+const SETTINGS_NAMESPACE = 'dsh-plugin-shell-skin'
 
 /** The slice of the settings form controller used for live preview. */
 interface ConfigFormLike {
@@ -329,7 +329,7 @@ export function apply(ctx: Context): void {
 
   ctx.slots.inject('plugins.row.config', () => ctx.slots.register({
     name: 'plugins.row.config',
-    key: 'dsh-plugin-shell-skin#shell-skin',
+    key: 'dsh-plugin-shell-skin#dsh-plugin-shell-skin',
     locale: LOCALE_NS,
     inject: () => ({
       // Preview during a drag: repaint locally, without a Host round trip.

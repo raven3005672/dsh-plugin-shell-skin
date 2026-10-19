@@ -18,7 +18,7 @@ requests, tools, or the host filesystem.
 ## Settings
 
 Open **Plugins**, select the bundle, and use the configure control on the
-`shell-skin` row:
+`dsh-plugin-shell-skin` row:
 
 | Setting | Applies |
 |---|---|
