@@ -53,7 +53,9 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "typecheck": "tsc -p tsconfig.json",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run typecheck && npm run smoke"
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "^3.18.5"
@@ -78,5 +80,9 @@
   },
   "bugs": {
     "url": "https://github.com/raven3005672/dsh-plugin-shell-skin/issues"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
   }
 }
