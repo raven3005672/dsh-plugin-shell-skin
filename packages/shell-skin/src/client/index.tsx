@@ -290,10 +290,12 @@ export function apply(ctx: Context): void {
       if (value === undefined) return
       applyNow({ ...currentValues, ...value })
     }
+    // Subscribe before the first read: a change landing between the read and
+    // the subscription would otherwise be lost. The replay is idempotent.
+    const unsubscribe = form.subscribe(sync)
     sync()
-    const off = form.subscribe(sync)
     return () => {
-      off()
+      unsubscribe()
       disposeTokens?.()
     }
   })
