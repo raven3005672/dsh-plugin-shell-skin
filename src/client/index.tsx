@@ -49,6 +49,10 @@ interface SkinSettings {
   bootColorLight: string
   /** Colour behind the wallpaper in the dark palette. */
   bootColorDark: string
+  /** Let the wallpaper show through the sidebar. */
+  sidebarWallpaper: boolean
+  /** Sidebar opacity over the wallpaper, both palettes. */
+  sidebarOpacity: number
   /** Use the image stored in this browser. */
   customWallpaper: boolean
   /** Fall back to the artwork shipped with the plugin. */
@@ -61,6 +65,8 @@ const FALLBACK_SETTINGS: SkinSettings = {
   darkOpacity: 0.55,
   bootColorLight: '#ffffff',
   bootColorDark: '#0c0f15',
+  sidebarWallpaper: true,
+  sidebarOpacity: 0.68,
   customWallpaper: false,
   bundledWallpaper: true,
 }
@@ -74,6 +80,8 @@ function readSettings(): SkinSettings {
     darkOpacity: injected?.darkOpacity ?? FALLBACK_SETTINGS.darkOpacity,
     bootColorLight: injected?.bootColorLight ?? FALLBACK_SETTINGS.bootColorLight,
     bootColorDark: injected?.bootColorDark ?? FALLBACK_SETTINGS.bootColorDark,
+    sidebarWallpaper: injected?.sidebarWallpaper ?? FALLBACK_SETTINGS.sidebarWallpaper,
+    sidebarOpacity: injected?.sidebarOpacity ?? FALLBACK_SETTINGS.sidebarOpacity,
     customWallpaper: injected?.customWallpaper ?? FALLBACK_SETTINGS.customWallpaper,
     bundledWallpaper: injected?.bundledWallpaper ?? FALLBACK_SETTINGS.bundledWallpaper,
   }
@@ -96,7 +104,7 @@ interface ConfigFormsLike {
 }
 
 /** Sidebars read as one shade denser than the main surface. */
-const SIDEBAR_DELTA = 0.1
+/** Sidebar is opaque when the wallpaper stops there. */
 
 /**
  * Format one translucent color.
@@ -109,12 +117,13 @@ function rgba(rgb: string, opacity: number): string {
 }
 
 /**
- * Derive the sidebar opacity from the surface opacity.
- * @param opacity - surface opacity.
- * @returns sidebar opacity, never below zero.
+ * Resolve the sidebar fill alpha: opaque without the wallpaper, the chosen
+ * value with it.
+ * @param value - current settings.
+ * @returns alpha in [0, 1].
  */
-function sidebarOpacity(opacity: number): number {
-  return Math.max(0, opacity - SIDEBAR_DELTA)
+function sidebarAlpha(value: SkinSettings): number {
+  return value.sidebarWallpaper ? value.sidebarOpacity : 1
 }
 
 const HOLD_MS = 1100
@@ -265,8 +274,8 @@ function applyTokens(ctx: Context, value: SkinSettings): () => void {
       dark: rgba('12, 14, 20', value.darkOpacity),
     },
     '--dsw-specific-sidebar-fill': {
-      light: rgba('246, 247, 249', sidebarOpacity(value.lightOpacity)),
-      dark: rgba('18, 20, 28', sidebarOpacity(value.darkOpacity)),
+      light: rgba('246, 247, 249', sidebarAlpha(value)),
+      dark: rgba('18, 20, 28', sidebarAlpha(value)),
     },
   })
 }

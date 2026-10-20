@@ -23,6 +23,10 @@ export interface SkinConfigValues {
   bootColorLight: string
   /** Pre-plugin canvas color in the dark palette. */
   bootColorDark: string
+  /** Let the wallpaper show through the sidebar. */
+  sidebarWallpaper: boolean
+  /** Sidebar opacity over the wallpaper, both palettes. */
+  sidebarOpacity: number
   /** Use the image stored in this browser. */
   customWallpaper: boolean
   /** Fall back to the artwork shipped with the plugin. */
@@ -81,6 +85,8 @@ const DEFAULTS: SkinConfigValues = {
   darkOpacity: 0.55,
   bootColorLight: '#ffffff',
   bootColorDark: '#0c0f15',
+  sidebarWallpaper: true,
+  sidebarOpacity: 0.68,
   customWallpaper: false,
   bundledWallpaper: true,
 }
@@ -97,6 +103,8 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
   /** Translate a key, falling back to the English dictionary outside a locale host. */
   const copy = (key: SkinKey): string => t?.(key) ?? en[key]
   const [draft, setDraft] = useState<Partial<SkinConfigValues>>({})
+  const [pickedName, setPickedName] = useState<string | undefined>(undefined)
+  const inputRef = useRef<HTMLInputElement>(null)
   const pending = useRef<Partial<SkinConfigValues>>({})
   const commitTimer = useRef<number | undefined>(undefined)
   // A colour picker fires change per movement; land one write after the drag.
@@ -225,6 +233,44 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
 
       <label style={row}>
         <span style={label}>
+          {copy('sidebarWallpaper.title')}
+          <br />
+          <span style={hint}>{copy('sidebarWallpaper.description')}</span>
+        </span>
+        <Switch
+          checked={value.sidebarWallpaper}
+          label={copy('sidebarWallpaper.title')}
+          disabled={disabled}
+          onChange={next => { write('sidebarWallpaper', next); commit() }}
+        />
+      </label>
+
+      <label style={row}>
+        <span style={label}>
+          {copy('sidebarOpacity.title')}
+          <br />
+          <span style={hint}>{copy('sidebarOpacity.description')}</span>
+        </span>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.01}
+          value={value.sidebarOpacity}
+          disabled={disabled || !value.sidebarWallpaper}
+          onChange={event => {
+            const next = Number(event.target.value)
+            write('sidebarOpacity', next)
+            preview?.({ sidebarOpacity: next })
+          }}
+          onPointerUp={commit}
+          onKeyUp={commit}
+          onBlur={commit}
+        />
+      </label>
+
+      <label style={row}>
+        <span style={label}>
           {copy('bootLight.title')}
           <br />
           <span style={hint}>{copy('bootLight.description')}</span>
@@ -295,13 +341,19 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
             <span style={hint}>{copy('image.description')}</span>
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 'none' }}>
+            <span style={{ ...hint, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {pickedName === undefined ? copy('image.none') : `${copy('image.selected')}: ${pickedName}`}
+            </span>
             <input
+              ref={inputRef}
               type="file"
               accept="image/*"
               disabled={disabled}
-              style={{ maxWidth: 190 }}
+              style={{ display: 'none' }}
               onChange={event => {
-                void pickWallpaper(event.target.files?.[0])
+                const file = event.target.files?.[0]
+                setPickedName(file?.name)
+                void pickWallpaper(file)
                 event.target.value = ''
               }}
             />
@@ -310,7 +362,16 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
               variant="outline"
               disabled={disabled}
               style={{ whiteSpace: 'nowrap' }}
-              onClick={() => { void resetWallpaper() }}
+              onClick={() => inputRef.current?.click()}
+            >
+              {copy('image.choose')}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={disabled}
+              style={{ whiteSpace: 'nowrap' }}
+              onClick={() => { setPickedName(undefined); void resetWallpaper() }}
             >
               {copy('image.remove')}
             </Button>

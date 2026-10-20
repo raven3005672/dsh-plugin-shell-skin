@@ -28,6 +28,10 @@ export interface Config {
   bootColorLight: Volatile<string>
   /** Canvas color painted before the app mounts, in the dark palette. */
   bootColorDark: Volatile<string>
+  /** Let the wallpaper show through the sidebar. */
+  sidebarWallpaper: Volatile<boolean>
+  /** Sidebar opacity over the wallpaper, both palettes. */
+  sidebarOpacity: Volatile<number>
   /** Use the wallpaper the user uploaded in this browser. */
   customWallpaper: Volatile<boolean>
   /** Fall back to the artwork shipped with the plugin. */
@@ -40,6 +44,8 @@ export const Config = z.object({
   darkOpacity: z.number().min(0).max(1).default(0.55).volatile(),
   bootColorLight: z.string().default('#ffffff').volatile(),
   bootColorDark: z.string().default('#0c0f15').volatile(),
+  sidebarWallpaper: z.boolean().default(true).volatile(),
+  sidebarOpacity: z.number().min(0).max(1).default(0.68).volatile(),
   customWallpaper: z.boolean().default(false).volatile(),
   bundledWallpaper: z.boolean().default(true).volatile(),
 })
@@ -76,6 +82,8 @@ export function apply(ctx: Context, config: Config): void {
         darkOpacity: config.darkOpacity.get(),
         bootColorLight: config.bootColorLight.get(),
         bootColorDark: config.bootColorDark.get(),
+        sidebarWallpaper: config.sidebarWallpaper.get(),
+        sidebarOpacity: config.sidebarOpacity.get(),
         customWallpaper: config.customWallpaper.get(),
         bundledWallpaper: config.bundledWallpaper.get(),
       },
