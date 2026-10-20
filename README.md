@@ -145,6 +145,10 @@ pnpm dsh web --patch ../dsh-plugin-shell-skin/dev.patch.yml
 
 另外说明：用户自行上传的壁纸只保存在本地浏览器（IndexedDB），不会随插件分发，也不会上传到任何服务器；由用户自行确保其上传内容的合法性。
 
+## 更新日志
+
+各版本的功能变更与问题修复见 [CHANGELOG.md](CHANGELOG.md)。
+
 ## 许可
 
 [MIT](LICENSE)

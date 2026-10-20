@@ -18,7 +18,8 @@
     "lib",
     "cordis.patch.yml",
     "locale",
-    "icon.svg"
+    "icon.svg",
+    "CHANGELOG.md"
   ],
   "keywords": [
     "dsh",
