@@ -238,6 +238,13 @@ const SKIN_CSS = `
     background-repeat: no-repeat;
     background-attachment: fixed;
   }
+  /* Desktop: the shell repaints the sidebar as a 40% mix of the fill token plus
+     a blue wash, so both the wallpaper switch and the opacity slider stop
+     meaning what they say. Repaint it from the token alone. */
+  html[data-platform='darwin']:root [class*='sidebarCol'] {
+    background-color: var(--dsw-specific-sidebar-fill);
+    background-image: none;
+  }
   /* The palette flag lives on <body>, so the colour is selected from html. */
   html:has(body[data-ds-dark-theme]),
   html[data-platform='darwin']:root:has(body[data-ds-dark-theme]) {
