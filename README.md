@@ -145,6 +145,24 @@ pnpm dsh web --patch ../dsh-plugin-shell-skin/dev.patch.yml
 
 另外说明：用户自行上传的壁纸只保存在本地浏览器（IndexedDB），不会随插件分发，也不会上传到任何服务器；由用户自行确保其上传内容的合法性。
 
+## 发布
+
+版本号写在 `package.json` 里。发布走 GitHub Actions 的 Trusted Publishing（OIDC），不需要本地 token 或 OTP：
+
+1. 改 `package.json` 的 `version`，更新 `CHANGELOG.md`，提交；
+2. 打 tag 并推送：
+
+```sh
+git tag v0.1.4
+git push origin v0.1.4
+```
+
+工作流 [`.github/workflows/publish.yml`](.github/workflows/publish.yml) 会校验 tag 与版本号一致、跑类型检查和 smoke，然后执行 `npm publish --provenance`。
+
+首次使用需要在 npm 包设置里配置 Trusted publisher（GitHub Actions，仓库 `raven3005672/dsh-plugin-shell-skin`，工作流文件名 `publish.yml`）。
+
+本地手动发布（`npm publish`）仍然可用，但需要网页登录过 2FA。
+
 ## 更新日志
 
 各版本的功能变更与问题修复见 [CHANGELOG.md](CHANGELOG.md)。
