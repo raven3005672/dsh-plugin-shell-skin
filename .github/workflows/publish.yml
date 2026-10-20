@@ -27,9 +27,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The action reads packageManager from package.json; passing a version
+      # here as well makes it fail with "Multiple versions of pnpm specified".
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v4
         with:
@@ -49,6 +49,8 @@ jobs:
             exit 1
           fi
 
+      # smoke loads lib/client.js, which only exists after a build.
+      - run: pnpm build
       - run: pnpm typecheck
       - run: pnpm smoke
 
