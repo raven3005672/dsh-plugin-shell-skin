@@ -137,6 +137,8 @@ pnpm dsh web --patch ../dsh-plugin-shell-skin/dev.patch.yml
 
 改了 client 半边刷新页面即可；改了 host 半边或 overlay 需要重启。
 
+写新插件时的完整检查清单见 [docs/PLUGIN_PLAYBOOK.md](docs/PLUGIN_PLAYBOOK.md)。
+
 ## 素材与版权声明
 
 插件内置的默认壁纸图片**来自网络**，仅用于演示和装饰目的，作者未持有该图片的明确授权，版权归原作者所有。
