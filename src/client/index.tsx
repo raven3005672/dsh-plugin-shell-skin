@@ -290,6 +290,7 @@ export function apply(ctx: Context): void {
   // Wallpaper precedence: the stored image when the user asks for it, else the
   // bundled artwork when that is on, else no image at all (boot colour only).
   let storedWallpaperUrl: string | undefined
+  let storedWallpaperName: string | undefined
   let currentValues = settings
   let disposeTokens: (() => void) | undefined
 
@@ -298,6 +299,7 @@ export function apply(ctx: Context): void {
     if (storedWallpaperUrl === undefined) return
     URL.revokeObjectURL(storedWallpaperUrl)
     storedWallpaperUrl = undefined
+    storedWallpaperName = undefined
   }
 
   /** Apply the wallpaper the current settings ask for. */
@@ -355,8 +357,12 @@ export function apply(ctx: Context): void {
         await saveWallpaper(file)
         releaseWallpaper()
         storedWallpaperUrl = URL.createObjectURL(file)
+        storedWallpaperName = file.name
         applyWallpaper()
       },
+      // The row starts empty on every mount; these let it say what is stored.
+      wallpaperName: () => storedWallpaperName,
+      hasWallpaper: () => storedWallpaperUrl !== undefined,
       clearWallpaper: async () => {
         await clearStoredWallpaper()
         releaseWallpaper()
@@ -376,9 +382,10 @@ export function apply(ctx: Context): void {
   // every load; the CSS variable only carries its current object URL.
   ctx.effect(() => {
     let live = true
-    void loadWallpaper().then(blob => {
-      if (!live || blob === undefined) return
-      storedWallpaperUrl = URL.createObjectURL(blob)
+    void loadWallpaper().then(stored => {
+      if (!live || stored === undefined) return
+      storedWallpaperUrl = URL.createObjectURL(stored.blob)
+      storedWallpaperName = stored.name
       applyWallpaper()
     }).catch(() => { /* storage refused the read; the settings choose the fallback */ })
     return () => { live = false; releaseWallpaper() }

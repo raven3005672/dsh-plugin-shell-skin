@@ -11,6 +11,14 @@ const DATABASE = 'shell-skin'
 const STORE = 'assets'
 const KEY = 'wallpaper'
 
+/** What the store holds: the image plus the name it was picked under. */
+export interface StoredWallpaper {
+  /** The image itself. */
+  blob: Blob
+  /** Original file name, absent for records written before it was kept. */
+  name?: string
+}
+
 /** Open the plugin's database, creating its single object store on first use. */
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -33,8 +41,13 @@ async function transact<T>(mode: IDBTransactionMode, work: (store: IDBObjectStor
     return await new Promise<T>((resolve, reject) => {
       const transaction = database.transaction(STORE, mode)
       const request = work(transaction.objectStore(STORE))
-      request.onsuccess = () => { resolve(request.result) }
+      let result: T
+      request.onsuccess = () => { result = request.result }
       request.onerror = () => { reject(request.error ?? new Error('shell-skin: IndexedDB request failed')) }
+      // Resolve on completion, not on the request: closing the database while
+      // the transaction is still open aborts it, and a write would be lost.
+      transaction.oncomplete = () => { resolve(result) }
+      transaction.onabort = () => { reject(transaction.error ?? new Error('shell-skin: IndexedDB transaction aborted')) }
     })
   } finally {
     database.close()
@@ -50,18 +63,23 @@ export function wallpaperStorageAvailable(): boolean {
  * Read the stored wallpaper.
  * @returns the stored image, or undefined when none was ever saved.
  */
-export async function loadWallpaper(): Promise<Blob | undefined> {
+export async function loadWallpaper(): Promise<StoredWallpaper | undefined> {
   if (!wallpaperStorageAvailable()) return undefined
   const stored = await transact<unknown>('readonly', store => store.get(KEY))
-  return stored instanceof Blob ? stored : undefined
+  if (stored instanceof Blob) return { blob: stored }
+  if (typeof stored === 'object' && stored !== null && 'blob' in stored) {
+    const record = stored as StoredWallpaper
+    return record.blob instanceof Blob ? record : undefined
+  }
+  return undefined
 }
 
 /**
  * Replace the stored wallpaper.
- * @param image - the file the user picked.
+ * @param image - the file the user picked, and the name to show for it.
  */
-export async function saveWallpaper(image: Blob): Promise<void> {
-  await transact('readwrite', store => store.put(image, KEY))
+export async function saveWallpaper(image: File): Promise<void> {
+  await transact('readwrite', store => store.put({ blob: image, name: image.name } satisfies StoredWallpaper, KEY))
 }
 
 /** Remove the stored wallpaper. */

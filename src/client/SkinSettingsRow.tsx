@@ -67,6 +67,10 @@ export interface SkinSettingsRowProps {
   setWallpaper?(file: File): Promise<void>
   /** Drop the stored image and fall back to the bundled wallpaper. */
   clearWallpaper?(): Promise<void>
+  /** Name of the image already stored in this browser, when known. */
+  wallpaperName?(): string | undefined
+  /** Whether this browser already holds a wallpaper. */
+  hasWallpaper?(): boolean
   /** Row settings face, absent while the namespace is not served. */
   form?: {
     state: SkinConfigState
@@ -96,7 +100,7 @@ const DEFAULTS: SkinConfigValues = {
  * @param props - owner props supplied by the Plugins page.
  * @returns the description line, the form, or null while nothing is known.
  */
-export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpaper, t }: SkinSettingsRowProps): ReactElement | null {
+export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpaper, wallpaperName, hasWallpaper, t }: SkinSettingsRowProps): ReactElement | null {
   // Dragging a range fires `change` per pixel. Staging the preview locally and
   // committing once on release keeps the Host at one write per gesture instead
   // of one per frame.
@@ -104,9 +108,19 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
   const copy = (key: SkinKey): string => t?.(key) ?? en[key]
   const [draft, setDraft] = useState<Partial<SkinConfigValues>>({})
   const [pickedName, setPickedName] = useState<string | undefined>(undefined)
+  const [stored, setStored] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const pending = useRef<Partial<SkinConfigValues>>({})
   const commitTimer = useRef<number | undefined>(undefined)
+  // A stored image survives reloads, so the row asks the skin what it holds
+  // instead of starting from "no file selected".
+  useEffect(() => {
+    if (hasWallpaper?.() === true) {
+      setStored(true)
+      setPickedName(wallpaperName?.())
+    }
+  }, [])
+
   // A colour picker fires change per movement; land one write after the drag.
   useEffect(() => () => { window.clearTimeout(commitTimer.current) }, [])
 
@@ -150,6 +164,8 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
     try {
       setWallpaperError(undefined)
       await setWallpaper(file)
+      setStored(true)
+      setPickedName(file.name)
       write('customWallpaper', true)
       commit()
     } catch (error) {
@@ -342,7 +358,9 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 'none' }}>
             <span style={{ ...hint, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {pickedName === undefined ? copy('image.none') : `${copy('image.selected')}: ${pickedName}`}
+              {pickedName !== undefined
+                ? `${copy('image.selected')}: ${pickedName}`
+                : stored ? copy('image.saved') : copy('image.none')}
             </span>
             <input
               ref={inputRef}
@@ -371,7 +389,7 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
               variant="outline"
               disabled={disabled}
               style={{ whiteSpace: 'nowrap' }}
-              onClick={() => { setPickedName(undefined); void resetWallpaper() }}
+              onClick={() => { setPickedName(undefined); setStored(false); void resetWallpaper() }}
             >
               {copy('image.remove')}
             </Button>
