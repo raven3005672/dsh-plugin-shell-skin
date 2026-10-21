@@ -7,11 +7,11 @@
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/github/license/raven3005672/dsh-plugin-shell-skin?color=orange"></a>
 </p>
 
-给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 换一层壳：**开场动画、壁纸、面板透明度**，一个设置页全管。
+给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 换一层外观：**开场动画、壁纸、面板透明度**，一个设置页全管。
 
-全部逻辑跑在**浏览器半边**，不碰会话、模型请求、工具，也不读写你的文件系统。
+所有效果都在页面里完成，不碰会话、模型请求，也不读写你的文件系统。
 
-> 名字里的 **shell 指应用外壳（app shell）**，不是侧栏里的终端；这个插件给整个界面换壁纸和外观，不修改终端配色。
+> 名字里的 **shell 指应用外壳（app shell）**，不是侧边栏里的终端；这个插件给整个界面换壁纸和外观，不修改终端配色。
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/raven3005672/dsh-plugin-shell-skin/master/assets/preview/home-light.jpg" width="880" alt="浅色主题：壁纸透过半透明面板">
@@ -21,11 +21,11 @@
 
 | 功能 | 说明 |
 |---|---|
-| **开场动画** | 页面加载时播放一段约 1.5 秒的入场动画，然后淡出；尊重 `prefers-reduced-motion` |
+| **开场动画** | 页面加载时播放一段约 1.5 秒的动画，然后淡出；系统开启“减少动态效果”时自动跳过 |
 | **壁纸** | 自带一张，也可以选你自己电脑里的图片，只存在浏览器里 |
-| **面板透明度** | 分别控制浅色 / 深色下侧栏和面板的透明度，拖动时实时预览 |
-| **首帧底色** | 应用挂载前先刷上底色，避免启动瞬间闪白 |
-| **设置页** | 集成在插件配置页里，所有项即时生效（开关除外，见下方限制） |
+| **面板透明度** | 分别控制浅色 / 深色下侧边栏和面板的透明度，拖动时实时预览 |
+| **启动时的底色** | 应用加载前先铺上颜色，避免打开瞬间闪白 |
+| **设置页** | 在「设置 → 界面皮肤」里，所有项即时生效 |
 | **中英文** | 跟随 DSH 的语言设置，设置页文案与插件卡片都会切换 |
 
 ## 安装
@@ -57,7 +57,7 @@ dsh plugin --profile web add "file:$PWD"
 ## 开场动画
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/raven3005672/dsh-plugin-shell-skin/master/assets/preview/splash.jpg" width="880" alt="启动动画">
+  <img src="https://raw.githubusercontent.com/raven3005672/dsh-plugin-shell-skin/master/assets/preview/splash.jpg" width="880" alt="开场动画">
 </p>
 
 三段式：底环呼吸 → 标识亮起 → 整层淡出。可以在设置里关掉，但**关闭要刷新一次页面**才生效——它改变的是插槽注册，不是纯样式。
@@ -92,10 +92,10 @@ dsh plugin --profile web add "file:$PWD"
 | 设置项 | 何时生效 |
 |---|---|
 | 开场动画 | 即时（关闭会立刻移除当前动画） |
-| 浅色 / 深色透明度 | 拖动时实时预览，松手保存 |
+| 浅色 / 深色面板透明度 | 拖动时实时预览，松手保存 |
 | 侧边栏显示壁纸 | 即时 |
 | 侧边栏透明度 | 拖动时实时预览，松手保存（两种配色共用） |
-| 首帧底色（浅色 / 深色） | 即时 |
+| 启动时的底色（浅色 / 深色） | 即时 |
 | 自定义壁纸 / 内置壁纸 | 即时 |
 | 图片 | 选中并存入浏览器后即时；仅接受图片，上限 10 MB |
 | 恢复默认 | 即时重置上面所有设置项（不删除已上传的图片） |
@@ -112,16 +112,16 @@ dsh plugin --profile web add "file:$PWD"
 
 在 Electron 桌面应用里同样生效，但有两处观感差异：
 
-- macOS 的侧栏有官方的 vibrancy 混合规则，会把面板透明度再乘一次，所以壁纸在侧栏里更透；
+- macOS 的侧边栏用系统毛玻璃效果，会把面板透明度再乘一次，所以壁纸在侧边栏里更透；
 - 桌面端 `body` 本来是透明的（让原生毛玻璃透出来），铺上壁纸后这层毛玻璃就被盖住了。
 
-另外，上传的图片按 origin 隔离，Web 和桌面端不会共享。
+另外，上传的图片按浏览器地址隔离，Web 和桌面端不会共享。
 
 ## 已知限制
 
-- **开场动画开关不即时**：它控制 `shell.overlay` 的注册，改动后需要刷新；
+- 开场动画只在页面加载时播放一次，不会在切换设置时重复播放；
 - 深色面板默认 0.55、浅色 0.85，想更透可以自己调；
-- 壁纸按 `cover` 铺满，极端长宽比会被裁切（暂不支持平铺 / 居中等模式）。
+- 壁纸按比例铺满窗口，极端长宽比的图片会被裁切（暂不支持平铺或居中）。
 
 ## 开发
 
@@ -138,7 +138,7 @@ pnpm smoke        # 不启浏览器，加载 client bundle 并断言注册行为
 pnpm dsh web --patch ../dsh-plugin-shell-skin/dev.patch.yml
 ```
 
-改了 client 半边刷新页面即可；改了 host 半边或 overlay 需要重启。
+改了前端代码刷新页面即可；改了后端代码或调试用的挂载配置需要重启。
 
 写新插件时的完整检查清单见 [docs/PLUGIN_PLAYBOOK.md](docs/PLUGIN_PLAYBOOK.md)。
 

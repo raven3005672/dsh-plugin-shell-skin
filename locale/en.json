@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Interface skin",
-    "description": "Startup splash, wallpaper, and panel translucency, all in the browser half."
+    "description": "Opening animation, custom wallpaper, and panel opacity, applied as you change them."
   }
 }

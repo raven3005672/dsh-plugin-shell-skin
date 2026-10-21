@@ -1,7 +1,7 @@
 {
   "name": "dsh-plugin-shell-skin",
   "version": "0.1.9",
-  "description": "A browser-only skin for DeepSeek Harness: a startup flourish and a custom app background.",
+  "description": "A skin for DeepSeek Harness: opening animation, custom wallpaper, and panel opacity, applied as you change them.",
   "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@11.28.5",
