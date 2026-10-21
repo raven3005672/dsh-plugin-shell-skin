@@ -40,8 +40,10 @@ export interface Config {
   sidebarWallpaper: Volatile<boolean>
   /** Sidebar opacity over the wallpaper, both palettes. */
   sidebarOpacity: Volatile<number>
-  /** Use the wallpaper the user uploaded in this browser. */
+  /** Use the wallpapers the user uploaded in this browser. */
   customWallpaper: Volatile<boolean>
+  /** Pick one stored wallpaper at random on every start. */
+  randomWallpaper: Volatile<boolean>
   /** Fall back to the artwork shipped with the plugin. */
   bundledWallpaper: Volatile<boolean>
   /** Which bundled artwork to use: classic, aurora, or arc. */
@@ -57,6 +59,7 @@ export const Config = z.object({
   sidebarWallpaper: z.boolean().default(true).volatile(),
   sidebarOpacity: z.number().min(0).max(1).default(0.68).volatile(),
   customWallpaper: z.boolean().default(false).volatile(),
+  randomWallpaper: z.boolean().default(false).volatile(),
   bundledWallpaper: z.boolean().default(true).volatile(),
   bundledPreset: z.string().default('classic').volatile(),
 })
@@ -96,6 +99,7 @@ export function apply(ctx: Context, config: Config): void {
         sidebarWallpaper: config.sidebarWallpaper.get(),
         sidebarOpacity: config.sidebarOpacity.get(),
         customWallpaper: config.customWallpaper.get(),
+        randomWallpaper: config.randomWallpaper.get(),
         bundledWallpaper: config.bundledWallpaper.get(),
         bundledPreset: config.bundledPreset.get(),
         version: packageVersion(),

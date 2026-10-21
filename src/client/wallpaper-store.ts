@@ -1,22 +1,34 @@
 /**
- * IndexedDB storage for a wallpaper the user picked in this browser.
+ * IndexedDB storage for the wallpapers the user picked in this browser.
  *
- * A Blob URL only lives as long as the document that created it, so the file
- * itself is kept here and re-materialised on every page load. The store is
- * origin-scoped: another port or another browser sees no wallpaper, and
- * nothing leaves this machine.
+ * Blob URLs only live as long as the document that created them, so the files
+ * are kept here and re-materialised on every page load. The store is
+ * origin-scoped: another port or another browser sees nothing, and nothing
+ * leaves this machine.
+ *
+ * Records:
+ *   `wallpapers` — StoredWallpaper[] (up to MAX_WALLPAPERS)
+ *   `active`     — id of the image selected when random mode is off
+ *   `wallpaper`  — legacy single-image record, migrated on first read
  */
 
 const DATABASE = 'shell-skin'
 const STORE = 'assets'
-const KEY = 'wallpaper'
+const KEY = 'wallpapers'
+const ACTIVE = 'active'
+const LEGACY = 'wallpaper'
 
-/** What the store holds: the image plus the name it was picked under. */
+/** How many uploads the store keeps. */
+export const MAX_WALLPAPERS = 9
+
+/** One stored image. */
 export interface StoredWallpaper {
+  /** Stable id used by the settings gallery and the active pointer. */
+  id: string
+  /** Original file name, when the record kept one. */
+  name?: string
   /** The image itself. */
   blob: Blob
-  /** Original file name, absent for records written before it was kept. */
-  name?: string
 }
 
 /** Open the plugin's database, creating its single object store on first use. */
@@ -59,31 +71,75 @@ export function wallpaperStorageAvailable(): boolean {
   return typeof indexedDB !== 'undefined'
 }
 
+/** Build an id without assuming `crypto.randomUUID` exists. */
+function newId(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `w${Date.now()}${Math.round(Math.random() * 1e6)}`
+}
+
 /**
- * Read the stored wallpaper.
- * @returns the stored image, or undefined when none was ever saved.
+ * Read the stored wallpapers, migrating the old single-image record.
+ * @returns the stored images, oldest first.
  */
-export async function loadWallpaper(): Promise<StoredWallpaper | undefined> {
-  if (!wallpaperStorageAvailable()) return undefined
+export async function loadWallpapers(): Promise<StoredWallpaper[]> {
+  if (!wallpaperStorageAvailable()) return []
   const stored = await transact<unknown>('readonly', store => store.get(KEY))
-  if (stored instanceof Blob) return { blob: stored }
-  if (typeof stored === 'object' && stored !== null && 'blob' in stored) {
-    const record = stored as StoredWallpaper
-    return record.blob instanceof Blob ? record : undefined
-  }
-  return undefined
+  if (Array.isArray(stored)) return stored as StoredWallpaper[]
+  const legacy = await transact<unknown>('readonly', store => store.get(LEGACY))
+  if (legacy === undefined) return []
+  const blob = legacy instanceof Blob
+    ? legacy
+    : (typeof legacy === 'object' && legacy !== null && 'blob' in legacy ? (legacy as StoredWallpaper).blob : undefined)
+  if (!(blob instanceof Blob)) return []
+  const name = typeof legacy === 'object' && legacy !== null && 'name' in legacy ? (legacy as StoredWallpaper).name : undefined
+  const migrated: StoredWallpaper[] = [{ id: newId(), ...name === undefined ? {} : { name }, blob }]
+  await transact('readwrite', store => store.put(migrated, KEY))
+  await transact('readwrite', store => store.delete(LEGACY))
+  return migrated
 }
 
 /**
- * Replace the stored wallpaper.
- * @param image - the file the user picked, and the name to show for it.
+ * Append one image.
+ * @param file - the picked file.
+ * @returns the stored images after the write.
  */
-export async function saveWallpaper(image: File): Promise<void> {
-  await transact('readwrite', store => store.put({ blob: image, name: image.name } satisfies StoredWallpaper, KEY))
+export async function addWallpaper(file: File): Promise<StoredWallpaper[]> {
+  const images = await loadWallpapers()
+  if (images.length >= MAX_WALLPAPERS) throw new Error('wallpaper-limit')
+  const next = [...images, { id: newId(), name: file.name, blob: file }]
+  await transact('readwrite', store => store.put(next, KEY))
+  return next
 }
 
-/** Remove the stored wallpaper. */
-export async function clearStoredWallpaper(): Promise<void> {
+/**
+ * Remove one image by id.
+ * @param id - record to drop.
+ * @returns the stored images after the write.
+ */
+export async function removeWallpaper(id: string): Promise<StoredWallpaper[]> {
+  const images = (await loadWallpapers()).filter(image => image.id !== id)
+  await transact('readwrite', store => store.put(images, KEY))
+  return images
+}
+
+/**
+ * Read the active image id.
+ * @returns the id, or undefined when nothing is selected.
+ */
+export async function loadActiveId(): Promise<string | undefined> {
+  if (!wallpaperStorageAvailable()) return undefined
+  const stored = await transact<unknown>('readonly', store => store.get(ACTIVE))
+  return typeof stored === 'string' ? stored : undefined
+}
+
+/**
+ * Persist the active image id.
+ * @param id - the id to remember, or undefined to clear it.
+ */
+export async function saveActiveId(id: string | undefined): Promise<void> {
   if (!wallpaperStorageAvailable()) return
-  await transact('readwrite', store => store.delete(KEY))
+  if (id === undefined) {
+    await transact('readwrite', store => store.delete(ACTIVE))
+    return
+  }
+  await transact('readwrite', store => store.put(id, ACTIVE))
 }

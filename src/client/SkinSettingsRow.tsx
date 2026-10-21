@@ -8,7 +8,7 @@
  */
 import { Button, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { en, type SkinKey } from './locales.ts'
-import { wallpaperStorageAvailable } from './wallpaper-store.ts'
+import { MAX_WALLPAPERS, wallpaperStorageAvailable } from './wallpaper-store.ts'
 import { useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 
@@ -28,8 +28,10 @@ export interface SkinConfigValues {
   sidebarWallpaper: boolean
   /** Sidebar opacity over the wallpaper, both palettes. */
   sidebarOpacity: number
-  /** Use the image stored in this browser. */
+  /** Use the images stored in this browser. */
   customWallpaper: boolean
+  /** Pick one stored image at random on every start. */
+  randomWallpaper: boolean
   /** Fall back to the artwork shipped with the plugin. */
   bundledWallpaper: boolean
   /** Which bundled artwork to use. */
@@ -69,14 +71,16 @@ export interface SkinSettingsRowProps {
   t?(key: SkinKey): string
   /** Repaint the skin without persisting, used while a control is dragged. */
   preview?(patch: Partial<SkinConfigValues>): void
-  /** Store a picked image in this browser and show it. */
-  setWallpaper?(file: File): Promise<void>
-  /** Drop the stored image and fall back to the bundled wallpaper. */
-  clearWallpaper?(): Promise<void>
-  /** Name of the image already stored in this browser, when known. */
-  wallpaperName?(): string | undefined
-  /** Whether this browser already holds a wallpaper. */
-  hasWallpaper?(): boolean
+  /** List the images stored in this browser, newest last. */
+  listWallpapers?(): readonly { id: string; name?: string; url: string }[]
+  /** Id of the image selected while random mode is off. */
+  activeWallpaperId?(): string | undefined
+  /** Append one picked image. */
+  addWallpaper?(file: File): Promise<void>
+  /** Drop one image by id. */
+  removeWallpaper?(id: string): Promise<void>
+  /** Make one image the active selection. */
+  selectWallpaper?(id: string): Promise<void>
   /** Plugin version, shown at the bottom of the page. */
   version?: string
   /** Bundled artwork choices rendered as thumbnails. */
@@ -102,6 +106,7 @@ const DEFAULTS: SkinConfigValues = {
   sidebarWallpaper: true,
   sidebarOpacity: 0.68,
   customWallpaper: false,
+  randomWallpaper: false,
   bundledWallpaper: true,
   bundledPreset: 'classic',
 }
@@ -111,28 +116,29 @@ const DEFAULTS: SkinConfigValues = {
  * @param props - owner props supplied by the Plugins page.
  * @returns the description line, the form, or null while nothing is known.
  */
-export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpaper, wallpaperName, hasWallpaper, version, presets, t }: SkinSettingsRowProps): ReactElement | null {
+export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWallpaperId, addWallpaper, removeWallpaper, selectWallpaper, version, presets, t }: SkinSettingsRowProps): ReactElement | null {
   // Dragging a range fires `change` per pixel. Staging the preview locally and
   // committing once on release keeps the Host at one write per gesture instead
   // of one per frame.
   /** Translate a key, falling back to the English dictionary outside a locale host. */
   const copy = (key: SkinKey): string => t?.(key) ?? en[key]
   const [draft, setDraft] = useState<Partial<SkinConfigValues>>({})
-  const [pickedName, setPickedName] = useState<string | undefined>(undefined)
-  const [stored, setStored] = useState(false)
+  const [gallery, setGallery] = useState<readonly { id: string; name?: string; url: string }[]>([])
+  const [active, setActive] = useState<string | undefined>(undefined)
   const [wallpaperError, setWallpaperError] = useState<string | undefined>(undefined)
   const [storageAvailable] = useState(() => wallpaperStorageAvailable())
   const inputRef = useRef<HTMLInputElement>(null)
   const pending = useRef<Partial<SkinConfigValues>>({})
   const commitTimer = useRef<number | undefined>(undefined)
-  // A stored image survives reloads, so the row asks the skin what it holds
-  // instead of starting from "no file selected".
-  useEffect(() => {
-    if (hasWallpaper?.() === true) {
-      setStored(true)
-      setPickedName(wallpaperName?.())
-    }
-  }, [])
+  /** Re-read the gallery after a write. */
+  const refreshGallery = (): void => {
+    setGallery(listWallpapers?.() ?? [])
+    setActive(activeWallpaperId?.())
+  }
+
+  // Stored images survive reloads, so the gallery starts from what the skin
+  // already holds.
+  useEffect(() => { refreshGallery() }, [])
 
   // A colour picker fires change per movement; land one write after the drag.
   useEffect(() => () => { window.clearTimeout(commitTimer.current) }, [])
@@ -167,39 +173,52 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
     window.clearTimeout(commitTimer.current)
     commitTimer.current = window.setTimeout(() => { commit() }, 350)
   }
-  const pickWallpaper = async (file: File | undefined): Promise<void> => {
-    if (file === undefined || setWallpaper === undefined) return
+  const pickWallpapers = async (files: FileList | undefined): Promise<void> => {
+    if (files === undefined || addWallpaper === undefined) return
     if (!storageAvailable) {
       setWallpaperError(copy('image.errorUnavailable'))
       return
     }
-    if (!file.type.startsWith('image/')) {
-      setWallpaperError(copy('image.errorType'))
-      return
+    setWallpaperError(undefined)
+    let added = 0
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) {
+        setWallpaperError(copy('image.errorType'))
+        continue
+      }
+      if (file.size > MAX_WALLPAPER_BYTES) {
+        setWallpaperError(copy('image.errorTooLarge'))
+        continue
+      }
+      try {
+        await addWallpaper(file)
+        added += 1
+      } catch (error) {
+        const limit = String(error).includes('wallpaper-limit')
+        setWallpaperError(limit ? copy('image.errorLimit') : (error instanceof Error ? error.message : copy('image.errorStore')))
+        break
+      }
     }
-    if (file.size > MAX_WALLPAPER_BYTES) {
-      setWallpaperError(copy('image.errorTooLarge'))
-      return
-    }
-    try {
-      setWallpaperError(undefined)
-      await setWallpaper(file)
-      setStored(true)
-      setPickedName(file.name)
+    refreshGallery()
+    if (added > 0) {
       write('customWallpaper', true)
       commit()
-    } catch (error) {
-      setWallpaperError(error instanceof Error ? error.message : copy('image.errorStore'))
     }
   }
-  const resetWallpaper = async (): Promise<void> => {
-    if (clearWallpaper === undefined) return
+  const removeSelected = async (): Promise<void> => {
+    if (active === undefined || removeWallpaper === undefined) return
     try {
       setWallpaperError(undefined)
-      await clearWallpaper()
+      await removeWallpaper(active)
+      refreshGallery()
     } catch (error) {
       setWallpaperError(error instanceof Error ? error.message : copy('image.errorClear'))
     }
+  }
+  const chooseWallpaper = async (id: string): Promise<void> => {
+    if (selectWallpaper === undefined) return
+    setActive(id)
+    await selectWallpaper(id)
   }
   const restoreDefaults = (): void => {
     pending.current = {}
@@ -366,6 +385,86 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
 
       <label style={row}>
         <span style={label}>
+          {copy('random.title')}
+          <br />
+          <span style={hint}>{copy('random.description')}</span>
+        </span>
+        <Switch
+          checked={value.randomWallpaper}
+          label={copy('random.title')}
+          disabled={disabled || !value.customWallpaper}
+          onChange={next => { write('randomWallpaper', next); commit() }}
+        />
+      </label>
+
+      {value.customWallpaper ? (
+        <div style={{ display: 'grid', gap: 8 }}>
+          <span style={label}>
+            {copy('image.title')}
+            <br />
+            <span style={hint}>{copy('image.description')}</span>
+          </span>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            {gallery.map(item => (
+              <button
+                key={item.id}
+                type="button"
+                aria-label={item.name ?? copy('image.title')}
+                aria-pressed={active === item.id}
+                data-wallpaper-thumb={item.id}
+                onClick={() => { void chooseWallpaper(item.id) }}
+                style={{
+                  padding: 0,
+                  width: 72,
+                  height: 44,
+                  overflow: 'hidden',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  background: 'transparent',
+                  border: active === item.id ? '2px solid #4c8dff' : '2px solid transparent',
+                  boxShadow: active === item.id ? '0 0 0 1px rgba(76,141,255,0.35)' : 'inset 0 0 0 1px rgba(0,0,0,0.12)',
+                }}
+              >
+                <img src={item.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              </button>
+            ))}
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={disabled || !storageAvailable || gallery.length >= MAX_WALLPAPERS}
+              onClick={() => inputRef.current?.click()}
+            >
+              {copy('image.add')}
+            </Button>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: 'none' }}
+              onChange={event => {
+                void pickWallpapers(event.target.files ?? undefined)
+                event.target.value = ''
+              }}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={disabled || active === undefined}
+              onClick={() => { void removeSelected() }}
+            >
+              {copy('image.removeSelected')}
+            </Button>
+            {gallery.length >= MAX_WALLPAPERS ? <span style={hint}>{copy('image.max')}</span> : null}
+          </div>
+        </div>
+      ) : null}
+
+
+      <label style={row}>
+        <span style={label}>
           {copy('bundled.title')}
           <br />
           <span style={hint}>{copy('bundled.description')}</span>
@@ -418,54 +517,6 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
           })}
         </span>
       </div>
-
-      {value.customWallpaper ? (
-        <div style={row}>
-          <span style={label}>
-            {copy('image.title')}
-            <br />
-            <span style={hint}>{copy('image.description')}</span>
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 'none' }}>
-            <span style={{ ...hint, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {pickedName !== undefined
-                ? `${copy('image.selected')}: ${pickedName}`
-                : stored ? copy('image.saved') : copy('image.none')}
-            </span>
-            <input
-              ref={inputRef}
-              type="file"
-              accept="image/*"
-              disabled={disabled}
-              style={{ display: 'none' }}
-              onChange={event => {
-                const file = event.target.files?.[0]
-                setPickedName(file?.name)
-                void pickWallpaper(file)
-                event.target.value = ''
-              }}
-            />
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={disabled || !storageAvailable}
-              style={{ whiteSpace: 'nowrap' }}
-              onClick={() => inputRef.current?.click()}
-            >
-              {copy('image.choose')}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={disabled}
-              style={{ whiteSpace: 'nowrap' }}
-              onClick={() => { setPickedName(undefined); setStored(false); void resetWallpaper() }}
-            >
-              {copy('image.remove')}
-            </Button>
-          </span>
-        </div>
-      ) : null}
 
       {storageAvailable ? null : <p style={hint}>{copy('image.unavailable')}</p>}
       {wallpaperError === undefined ? null : <p style={hint}>{wallpaperError}</p>}

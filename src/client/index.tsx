@@ -21,7 +21,7 @@ import wallpaperArc from '../../assets/wallpaper-arc.jpg'
 import wallpaperAurora from '../../assets/wallpaper-aurora.jpg'
 import { en, zh, type SkinKey } from './locales.ts'
 import { SkinSettingsSection } from './SkinSettingsSection.tsx'
-import { clearStoredWallpaper, loadWallpaper, saveWallpaper } from './wallpaper-store.ts'
+import { addWallpaper, loadActiveId, loadWallpapers, removeWallpaper, saveActiveId, type StoredWallpaper } from './wallpaper-store.ts'
 
 
 /** Bundled artwork choices, keyed by the setting value. */
@@ -62,8 +62,10 @@ interface SkinSettings {
   sidebarWallpaper: boolean
   /** Sidebar opacity over the wallpaper, both palettes. */
   sidebarOpacity: number
-  /** Use the image stored in this browser. */
+  /** Use the images stored in this browser. */
   customWallpaper: boolean
+  /** Pick one of the stored images at random on every start. */
+  randomWallpaper: boolean
   /** Fall back to the artwork shipped with the plugin. */
   bundledWallpaper: boolean
   /** Which bundled artwork to use: classic, aurora, or arc. */
@@ -81,6 +83,7 @@ const FALLBACK_SETTINGS: SkinSettings = {
   sidebarWallpaper: true,
   sidebarOpacity: 0.68,
   customWallpaper: false,
+  randomWallpaper: false,
   bundledWallpaper: true,
   bundledPreset: 'classic',
 }
@@ -97,6 +100,7 @@ function readSettings(): SkinSettings {
     sidebarWallpaper: injected?.sidebarWallpaper ?? FALLBACK_SETTINGS.sidebarWallpaper,
     sidebarOpacity: injected?.sidebarOpacity ?? FALLBACK_SETTINGS.sidebarOpacity,
     customWallpaper: injected?.customWallpaper ?? FALLBACK_SETTINGS.customWallpaper,
+    randomWallpaper: injected?.randomWallpaper ?? FALLBACK_SETTINGS.randomWallpaper,
     bundledWallpaper: injected?.bundledWallpaper ?? FALLBACK_SETTINGS.bundledWallpaper,
     bundledPreset: injected?.bundledPreset ?? FALLBACK_SETTINGS.bundledPreset,
     version: injected?.version,
@@ -310,10 +314,13 @@ function applyTokens(ctx: Context, value: SkinSettings): () => void {
  * @param ctx - the client Context.
  */
 export function apply(ctx: Context): void {
-  // Wallpaper precedence: the stored image when the user asks for it, else the
+  // Wallpaper precedence: a stored image when the user asks for it, else the
   // bundled artwork when that is on, else no image at all (boot colour only).
-  let storedWallpaperUrl: string | undefined
-  let storedWallpaperName: string | undefined
+  let wallpapers: StoredWallpaper[] = []
+  const wallpaperUrls = new Map<string, string>()
+  let activeId: string | undefined
+  /** Chosen once per page load while random mode is on, so sliders do not reshuffle. */
+  let randomPickId: string | undefined
   let currentValues = settings
   let disposeTokens: (() => void) | undefined
   let disposeSplash: (() => void) | undefined
@@ -333,21 +340,54 @@ export function apply(ctx: Context): void {
     disposeSplash = undefined
   }
 
-  /** Drop the object URL backing the stored image. */
-  const releaseWallpaper = (): void => {
-    if (storedWallpaperUrl === undefined) return
-    URL.revokeObjectURL(storedWallpaperUrl)
-    storedWallpaperUrl = undefined
-    storedWallpaperName = undefined
+  /** Object URL for one stored image, created on first use. */
+  const urlFor = (id: string): string | undefined => {
+    const image = wallpapers.find(item => item.id === id)
+    if (image === undefined) return undefined
+    const cached = wallpaperUrls.get(id)
+    if (cached !== undefined) return cached
+    const url = URL.createObjectURL(image.blob)
+    wallpaperUrls.set(id, url)
+    return url
+  }
+
+  /** Drop one cached object URL. */
+  const releaseUrl = (id: string): void => {
+    const url = wallpaperUrls.get(id)
+    if (url === undefined) return
+    URL.revokeObjectURL(url)
+    wallpaperUrls.delete(id)
+  }
+
+  /** Drop every cached object URL. */
+  const releaseUrls = (): void => {
+    for (const url of wallpaperUrls.values()) URL.revokeObjectURL(url)
+    wallpaperUrls.clear()
+  }
+
+  /** Pick a stored image at random, avoiding the active one when there is a choice. */
+  const pickRandom = (): string | undefined => {
+    if (wallpapers.length === 0) return undefined
+    const pool = wallpapers.length > 1 ? wallpapers.filter(item => item.id !== activeId) : wallpapers
+    return pool[Math.floor(Math.random() * pool.length)]?.id
   }
 
   /** Apply the wallpaper the current settings ask for. */
   const applyWallpaper = (): void => {
     const root = document.documentElement
-    if (currentValues.customWallpaper && storedWallpaperUrl !== undefined) {
-      root.style.setProperty('--shell-skin-wallpaper', `url("${storedWallpaperUrl}")`)
-      return
+    if (currentValues.customWallpaper && wallpapers.length > 0) {
+      // Random mode chooses once per page load; otherwise the gallery's
+      // selection decides.
+      if (currentValues.randomWallpaper && randomPickId === undefined) randomPickId = pickRandom()
+      const id = currentValues.randomWallpaper ? randomPickId : (activeId ?? wallpapers[0]?.id)
+      const url = id === undefined ? undefined : urlFor(id)
+      if (url !== undefined) {
+        root.style.setProperty('--shell-skin-wallpaper', `url("${url}")`)
+        if (id !== undefined) root.dataset.shellSkinWallpaper = id
+        return
+      }
     }
+    delete root.dataset.shellSkinWallpaper
     if (currentValues.bundledWallpaper) {
       const preset = PRESETS[currentValues.bundledPreset] ?? PRESETS.classic
       root.style.setProperty('--shell-skin-bundled', `url("${preset}")`)
@@ -362,7 +402,9 @@ export function apply(ctx: Context): void {
    * @param next - the settings to make current.
    */
   const applyNow = (next: SkinSettings): void => {
+    const randomTurnedOn = next.randomWallpaper && !currentValues.randomWallpaper
     currentValues = next
+    if (randomTurnedOn) randomPickId = pickRandom()
     disposeTokens?.()
     disposeTokens = applyTokens(ctx, next)
     // Boot colours stay visible after mount: they sit behind the wallpaper and
@@ -395,21 +437,36 @@ export function apply(ctx: Context): void {
         { id: 'aurora', src: wallpaperAurora, labelKey: 'preset.aurora' },
         { id: 'arc', src: wallpaperArc, labelKey: 'preset.arc' },
       ],
-      // The custom wallpaper never reaches the Host: the file stays in this
-      // browser's IndexedDB and only its Blob URL is applied.
-      setWallpaper: async (file: File) => {
-        await saveWallpaper(file)
-        releaseWallpaper()
-        storedWallpaperUrl = URL.createObjectURL(file)
-        storedWallpaperName = file.name
+      // Uploads never reach the Host: files stay in this browser's IndexedDB
+      // and only their Blob URLs are applied.
+      listWallpapers: () => wallpapers.map(image => ({
+        id: image.id,
+        ...image.name === undefined ? {} : { name: image.name },
+        url: urlFor(image.id) ?? '',
+      })),
+      activeWallpaperId: () => activeId,
+      addWallpaper: async (file: File) => {
+        wallpapers = await addWallpaper(file)
+        const added = wallpapers[wallpapers.length - 1]
+        if (activeId === undefined && added !== undefined) {
+          activeId = added.id
+          await saveActiveId(activeId)
+        }
         applyWallpaper()
       },
-      // The row starts empty on every mount; these let it say what is stored.
-      wallpaperName: () => storedWallpaperName,
-      hasWallpaper: () => storedWallpaperUrl !== undefined,
-      clearWallpaper: async () => {
-        await clearStoredWallpaper()
-        releaseWallpaper()
+      removeWallpaper: async (id: string) => {
+        wallpapers = await removeWallpaper(id)
+        releaseUrl(id)
+        if (randomPickId === id) randomPickId = undefined
+        if (activeId === id) {
+          activeId = wallpapers[0]?.id
+          await saveActiveId(activeId)
+        }
+        applyWallpaper()
+      },
+      selectWallpaper: async (id: string) => {
+        activeId = id
+        await saveActiveId(id)
         applyWallpaper()
       },
     }),
@@ -422,17 +479,24 @@ export function apply(ctx: Context): void {
     return () => style.remove()
   })
 
-  // The chosen wallpaper outlives the document as a Blob, so it comes back on
-  // every load; the CSS variable only carries its current object URL.
+  // Stored images outlive the document as Blobs, so they come back on every
+  // load; the CSS variable only carries the current object URL.
   ctx.effect(() => {
     let live = true
-    void loadWallpaper().then(stored => {
-      if (!live || stored === undefined) return
-      storedWallpaperUrl = URL.createObjectURL(stored.blob)
-      storedWallpaperName = stored.name
-      applyWallpaper()
-    }).catch(() => { /* storage refused the read; the settings choose the fallback */ })
-    return () => { live = false; releaseWallpaper() }
+    void (async () => {
+      try {
+        wallpapers = await loadWallpapers()
+        activeId = await loadActiveId()
+        if (activeId !== undefined && !wallpapers.some(image => image.id === activeId)) {
+          activeId = wallpapers[0]?.id
+        }
+        if (!live) return
+        applyWallpaper()
+      } catch {
+        /* storage refused the read; the settings choose the fallback */
+      }
+    })()
+    return () => { live = false; releaseUrls() }
   })
 
   ctx.effect(() => {

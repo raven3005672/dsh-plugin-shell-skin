@@ -30,14 +30,16 @@ export interface SkinSettingsSectionProps {
   form: SkinSettingsForm
   /** Repaint the skin without persisting, used while a control is dragged. */
   preview?(patch: Partial<SkinConfigValues>): void
-  /** Store a picked image in this browser and show it. */
-  setWallpaper?(file: File): Promise<void>
-  /** Drop the stored image and fall back to the bundled wallpaper. */
-  clearWallpaper?(): Promise<void>
-  /** Name of the image already stored in this browser, when known. */
-  wallpaperName?(): string | undefined
-  /** Whether this browser already holds a wallpaper. */
-  hasWallpaper?(): boolean
+  /** List the images stored in this browser. */
+  listWallpapers?(): readonly { id: string; name?: string; url: string }[]
+  /** Id of the active image. */
+  activeWallpaperId?(): string | undefined
+  /** Append one image. */
+  addWallpaper?(file: File): Promise<void>
+  /** Drop one image. */
+  removeWallpaper?(id: string): Promise<void>
+  /** Select one image. */
+  selectWallpaper?(id: string): Promise<void>
   /** Plugin version shown in the footer. */
   version?: string
   /** Bundled artwork choices, with the thumbnail the row shows. */
@@ -50,7 +52,7 @@ export interface SkinSettingsSectionProps {
  * @returns the settings page body.
  */
 export function SkinSettingsSection({
-  t, form, preview, setWallpaper, clearWallpaper, wallpaperName, hasWallpaper, version, presets,
+  t, form, preview, listWallpapers, activeWallpaperId, addWallpaper, removeWallpaper, selectWallpaper, version, presets,
 }: SkinSettingsSectionProps): ReactElement {
   const [state, setState] = useState<SkinConfigState>(() => form.getSnapshot())
 
@@ -69,10 +71,11 @@ export function SkinSettingsSection({
       t={t}
       form={{ state, mutate: (ops, revision) => form.mutate(ops, revision) }}
       preview={preview}
-      setWallpaper={setWallpaper}
-      clearWallpaper={clearWallpaper}
-      wallpaperName={wallpaperName}
-      hasWallpaper={hasWallpaper}
+      listWallpapers={listWallpapers}
+      activeWallpaperId={activeWallpaperId}
+      addWallpaper={addWallpaper}
+      removeWallpaper={removeWallpaper}
+      selectWallpaper={selectWallpaper}
       version={version}
       presets={presets}
     />
