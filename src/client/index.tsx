@@ -340,8 +340,7 @@ const SKIN_CSS = `
     /* Opaque danger surface: the photo must not show through the control. */
     background: var(--dsw-alias-file-diff-deleted-bg);
     color: var(--dsw-alias-state-error-primary);
-    outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
-    outline-offset: 1px;
+    outline: none;
   }
   @media (hover: none) {
     .shell-skin-thumb .shell-skin-thumb-delete { opacity: 1; pointer-events: auto; }
