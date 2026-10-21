@@ -44,6 +44,8 @@ export interface Config {
   customWallpaper: Volatile<boolean>
   /** Fall back to the artwork shipped with the plugin. */
   bundledWallpaper: Volatile<boolean>
+  /** Which bundled artwork to use: classic, aurora, or arc. */
+  bundledPreset: Volatile<string>
 }
 
 export const Config = z.object({
@@ -56,6 +58,7 @@ export const Config = z.object({
   sidebarOpacity: z.number().min(0).max(1).default(0.68).volatile(),
   customWallpaper: z.boolean().default(false).volatile(),
   bundledWallpaper: z.boolean().default(true).volatile(),
+  bundledPreset: z.string().default('classic').volatile(),
 })
 
 /**
@@ -94,6 +97,7 @@ export function apply(ctx: Context, config: Config): void {
         sidebarOpacity: config.sidebarOpacity.get(),
         customWallpaper: config.customWallpaper.get(),
         bundledWallpaper: config.bundledWallpaper.get(),
+        bundledPreset: config.bundledPreset.get(),
         version: packageVersion(),
       },
     })

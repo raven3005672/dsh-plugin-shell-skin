@@ -32,6 +32,8 @@ export interface SkinConfigValues {
   customWallpaper: boolean
   /** Fall back to the artwork shipped with the plugin. */
   bundledWallpaper: boolean
+  /** Which bundled artwork to use. */
+  bundledPreset: string
 }
 
 /** Largest image the browser store accepts, in bytes. */
@@ -99,6 +101,7 @@ const DEFAULTS: SkinConfigValues = {
   sidebarOpacity: 0.68,
   customWallpaper: false,
   bundledWallpaper: true,
+  bundledPreset: 'classic',
 }
 
 /**
@@ -371,6 +374,24 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
           disabled={disabled}
           onChange={next => { write('bundledWallpaper', next); commit() }}
         />
+      </label>
+
+      <label style={row}>
+        <span style={label}>
+          {copy('preset.title')}
+          <br />
+          <span style={hint}>{copy('preset.description')}</span>
+        </span>
+        <select
+          value={value.bundledPreset}
+          disabled={disabled || !value.bundledWallpaper}
+          style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(0,0,0,0.15)', background: 'transparent', color: 'inherit' }}
+          onChange={event => { write('bundledPreset', event.target.value); commit() }}
+        >
+          <option value="classic">{copy('preset.classic')}</option>
+          <option value="aurora">{copy('preset.aurora')}</option>
+          <option value="arc">{copy('preset.arc')}</option>
+        </select>
       </label>
 
       {value.customWallpaper ? (

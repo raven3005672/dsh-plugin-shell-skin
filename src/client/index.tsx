@@ -17,10 +17,19 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { ReactElement } from 'react'
 import wallpaper from '../../assets/wallpaper.jpg'
+import wallpaperArc from '../../assets/wallpaper-arc.jpg'
+import wallpaperAurora from '../../assets/wallpaper-aurora.jpg'
 import { en, zh, type SkinKey } from './locales.ts'
 import { SkinSettingsSection } from './SkinSettingsSection.tsx'
 import { clearStoredWallpaper, loadWallpaper, saveWallpaper } from './wallpaper-store.ts'
 
+
+/** Bundled artwork choices, keyed by the setting value. */
+const PRESETS: Record<string, string> = {
+  classic: wallpaper,
+  aurora: wallpaperAurora,
+  arc: wallpaperArc,
+}
 
 /** Copy namespace this plugin owns. */
 const LOCALE_NS = 'shellSkin'
@@ -57,6 +66,8 @@ interface SkinSettings {
   customWallpaper: boolean
   /** Fall back to the artwork shipped with the plugin. */
   bundledWallpaper: boolean
+  /** Which bundled artwork to use: classic, aurora, or arc. */
+  bundledPreset: string
   /** Package version, injected by the host for the settings footer. */
   version?: string
 }
@@ -71,6 +82,7 @@ const FALLBACK_SETTINGS: SkinSettings = {
   sidebarOpacity: 0.68,
   customWallpaper: false,
   bundledWallpaper: true,
+  bundledPreset: 'classic',
 }
 
 /** Read `__SHELL_SKIN__`, falling back when the row is mounted without a host injection. */
@@ -86,6 +98,7 @@ function readSettings(): SkinSettings {
     sidebarOpacity: injected?.sidebarOpacity ?? FALLBACK_SETTINGS.sidebarOpacity,
     customWallpaper: injected?.customWallpaper ?? FALLBACK_SETTINGS.customWallpaper,
     bundledWallpaper: injected?.bundledWallpaper ?? FALLBACK_SETTINGS.bundledWallpaper,
+    bundledPreset: injected?.bundledPreset ?? FALLBACK_SETTINGS.bundledPreset,
     version: injected?.version,
   }
 }
@@ -235,7 +248,7 @@ const SKIN_CSS = `
     --shell-skin-boot-light: ${settings.bootColorLight};
     --shell-skin-boot-dark: ${settings.bootColorDark};
     background-color: var(--shell-skin-boot-light);
-    background-image: var(--shell-skin-wallpaper, url("${wallpaper}"));
+    background-image: var(--shell-skin-wallpaper, var(--shell-skin-bundled, url("${wallpaper}")));
     background-position: center;
     background-size: cover;
     background-repeat: no-repeat;
@@ -336,6 +349,8 @@ export function apply(ctx: Context): void {
       return
     }
     if (currentValues.bundledWallpaper) {
+      const preset = PRESETS[currentValues.bundledPreset] ?? PRESETS.classic
+      root.style.setProperty('--shell-skin-bundled', `url("${preset}")`)
       root.style.removeProperty('--shell-skin-wallpaper')
       return
     }
