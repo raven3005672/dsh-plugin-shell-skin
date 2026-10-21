@@ -24,10 +24,10 @@ import { SkinSettingsSection } from './SkinSettingsSection.tsx'
 import { addWallpaper, loadActiveId, loadWallpapers, removeWallpaper, saveActiveId, type StoredWallpaper } from './wallpaper-store.ts'
 
 
-/** Clothing glyph used for this plugin's Settings nav entry. */
-const NAV_ICON = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">`
-  + `<path d="M4 5.2 6.2 3.4a1.8 1.8 0 0 0 3.6 0L12 5.2l-1.3 1.4V13H5.3V6.6L4 5.2Z" `
-  + `stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>`
+/** Filled clothing glyph, matching the weight of the shell's own nav icons. */
+const NAV_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">`
+  + `<path d="M5.8 2.4 2.4 4.4l1.2 2.4 1.6-.9V13h5.6V5.9l1.6.9 1.2-2.4-3.4-2c-.3.5-1 .8-2.2.8s-1.9-.3-2.2-.8Z" `
+  + `fill="none" stroke="#000" stroke-width="1.3" stroke-linejoin="round"/></svg>`
 
 /** Bundled artwork choices, keyed by the setting value. */
 const PRESETS: Record<string, string> = {
@@ -478,27 +478,31 @@ export function apply(ctx: Context): void {
   }, SkinSettingsSection))
 
   // The Settings shell picks nav icons from a fixed id map, so a plugin cannot
-  // declare one. Swap the glyph on our own entry instead: hide the default svg
-  // and prepend ours, re-applying after the dialog re-renders.
+  // declare one. Mask a filled glyph into the row the way the shell's own icons
+  // are drawn: hide its svg and paint ours through ::before with currentColor.
   ctx.effect(() => {
+    const mask = `url("data:image/svg+xml,${encodeURIComponent(NAV_GLYPH)}")`
     const style = document.createElement('style')
-    style.textContent = `[data-shell-skin-nav]>svg{display:none}`
-      + `[data-shell-skin-nav]>.shell-skin-nav-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;color:currentColor}`
+    style.dataset.pluginCss = 'shell-skin/nav-icon.css'
+    style.textContent = [
+      `[data-shell-skin-nav] [class*="navIcon"]{display:none}`,
+      `[data-shell-skin-nav]::before{content:"";flex:none;width:16px;height:16px;`
+        + `background-color:currentColor;-webkit-mask:${mask} center/16px 16px no-repeat;`
+        + `mask:${mask} center/16px 16px no-repeat}`,
+    ].join('')
     document.head.appendChild(style)
 
     const apply = (): void => {
       const dialog = document.querySelector('[data-shortcut-modal="settings"]')
       if (dialog === null) return
       const label = ctx.locale.bind(LOCALE_NS)('nav')
-      for (const button of dialog.querySelectorAll('nav button')) {
-        if (button.textContent?.trim() !== label) continue
-        if (button.hasAttribute('data-shell-skin-nav')) continue
-        button.setAttribute('data-shell-skin-nav', '')
-        const holder = document.createElement('span')
-        holder.className = 'shell-skin-nav-icon'
-        holder.setAttribute('aria-hidden', 'true')
-        holder.innerHTML = NAV_ICON
-        button.insertBefore(holder, button.firstChild)
+      const list = dialog.querySelector('[class*="navList"]')
+      if (list === null) return
+      for (const cell of list.querySelectorAll('[class*="navCell"]')) {
+        if (cell.getAttribute('data-shell-skin-nav') !== null) continue
+        if (cell.querySelector('[class*="navLabel"]')?.textContent === label) {
+          cell.setAttribute('data-shell-skin-nav', '')
+        }
       }
     }
 
