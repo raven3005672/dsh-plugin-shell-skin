@@ -80,8 +80,7 @@
     "@deepseek-ai/dsh-client-ui-primitives": "0.2.1-rc.2",
     "@deepseek-ai/dsh-client-locale": "0.2.1-rc.2",
     "@deepseek-ai/dsh-client-ui-slots": "0.2.1-rc.2",
-    "@deepseek-ai/dsh-client-ui-layout": "0.2.1-rc.2",
-    "@deepseek-ai/dsh-client-ui-plugin-manager": "0.2.1-rc.2"
+    "@deepseek-ai/dsh-client-ui-layout": "0.2.1-rc.2"
   },
   "bugs": {
     "url": "https://github.com/raven3005672/dsh-plugin-shell-skin/issues"

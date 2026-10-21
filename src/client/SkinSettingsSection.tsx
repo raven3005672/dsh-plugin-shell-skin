@@ -40,6 +40,8 @@ export interface SkinSettingsSectionProps {
   removeWallpaper?(id: string): Promise<void>
   /** Select one image. */
   selectWallpaper?(id: string): Promise<void>
+  /** Subscribe to store changes made outside this row. */
+  subscribeWallpapers?(listener: () => void): () => void
   /** Plugin version shown in the footer. */
   version?: string
   /** Bundled artwork choices, with the thumbnail the row shows. */
@@ -52,7 +54,7 @@ export interface SkinSettingsSectionProps {
  * @returns the settings page body.
  */
 export function SkinSettingsSection({
-  t, form, preview, listWallpapers, activeWallpaperId, addWallpaper, removeWallpaper, selectWallpaper, version, presets,
+  t, form, preview, listWallpapers, activeWallpaperId, addWallpaper, removeWallpaper, selectWallpaper, subscribeWallpapers, version, presets,
 }: SkinSettingsSectionProps): ReactElement {
   const [state, setState] = useState<SkinConfigState>(() => form.getSnapshot())
 
@@ -76,6 +78,7 @@ export function SkinSettingsSection({
       addWallpaper={addWallpaper}
       removeWallpaper={removeWallpaper}
       selectWallpaper={selectWallpaper}
+      subscribeWallpapers={subscribeWallpapers}
       version={version}
       presets={presets}
     />

@@ -81,6 +81,8 @@ export interface SkinSettingsRowProps {
   removeWallpaper?(id: string): Promise<void>
   /** Make one image the active selection. */
   selectWallpaper?(id: string): Promise<void>
+  /** Notify when the stored images change outside this row. */
+  subscribeWallpapers?(listener: () => void): () => void
   /** Plugin version, shown at the bottom of the page. */
   version?: string
   /** Bundled artwork choices rendered as thumbnails. */
@@ -99,7 +101,7 @@ const row = { display: 'flex', alignItems: 'center', justifyContent: 'space-betw
 /** Fallback values mirror the host schema defaults. */
 const DEFAULTS: SkinConfigValues = {
   splash: true,
-  lightOpacity: 0.8,
+  lightOpacity: 0.85,
   darkOpacity: 0.55,
   bootColorLight: '#ffffff',
   bootColorDark: '#0c0f15',
@@ -116,7 +118,7 @@ const DEFAULTS: SkinConfigValues = {
  * @param props - owner props supplied by the Plugins page.
  * @returns the description line, the form, or null while nothing is known.
  */
-export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWallpaperId, addWallpaper, removeWallpaper, selectWallpaper, version, presets, t }: SkinSettingsRowProps): ReactElement | null {
+export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWallpaperId, addWallpaper, removeWallpaper, selectWallpaper, subscribeWallpapers, version, presets, t }: SkinSettingsRowProps): ReactElement | null {
   // Dragging a range fires `change` per pixel. Staging the preview locally and
   // committing once on release keeps the Host at one write per gesture instead
   // of one per frame.
@@ -131,6 +133,8 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
   const inputRef = useRef<HTMLInputElement>(null)
   const pending = useRef<Partial<SkinConfigValues>>({})
   const commitTimer = useRef<number | undefined>(undefined)
+  /** Latest commit, so unmount can flush without capturing a stale closure. */
+  const flushRef = useRef<() => void>(() => {})
   /** Re-read the gallery after a write. */
   const refreshGallery = (): void => {
     setGallery(listWallpapers?.() ?? [])
@@ -138,11 +142,18 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
   }
 
   // Stored images survive reloads, so the gallery starts from what the skin
-  // already holds.
-  useEffect(() => { refreshGallery() }, [])
+  // already holds, and follows writes the skin makes elsewhere.
+  useEffect(() => {
+    refreshGallery()
+    return subscribeWallpapers?.(refreshGallery)
+  }, [])
 
-  // A colour picker fires change per movement; land one write after the drag.
-  useEffect(() => () => { window.clearTimeout(commitTimer.current) }, [])
+  // A colour picker fires change per movement; land one write after the drag,
+  // and flush (not drop) it when the panel closes first.
+  useEffect(() => () => {
+    window.clearTimeout(commitTimer.current)
+    flushRef.current()
+  }, [])
 
   if (form === undefined) return null
   const state = form.state
@@ -174,6 +185,15 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
     window.clearTimeout(commitTimer.current)
     commitTimer.current = window.setTimeout(() => { commit() }, 350)
   }
+  flushRef.current = commit
+  /** Friendly copy for the storage failures a browser can raise. */
+  const storageMessage = (error: unknown): string => {
+    if (String(error).includes('wallpaper-limit')) return copy('image.errorLimit')
+    const known = ['QuotaExceededError', 'SecurityError', 'InvalidStateError', 'UnknownError', 'NotSupportedError']
+    if (error instanceof DOMException && known.includes(error.name)) return copy('image.errorStore')
+    return error instanceof Error ? error.message : copy('image.errorStore')
+  }
+
   const pickWallpapers = async (files: FileList | undefined): Promise<void> => {
     if (files === undefined || addWallpaper === undefined) return
     if (!storageAvailable) {
@@ -213,7 +233,7 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
       await removeWallpaper(active)
       refreshGallery()
     } catch (error) {
-      setWallpaperError(error instanceof Error ? error.message : copy('image.errorClear'))
+      setWallpaperError(storageMessage(error))
     }
   }
   const chooseWallpaper = async (id: string): Promise<void> => {
@@ -470,25 +490,15 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
                 <img src={item.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
               </button>
             ))}
-            <button
-              type="button"
+            <Button
+              size="sm"
+              variant="outline"
               disabled={disabled || !storageAvailable || gallery.length >= MAX_WALLPAPERS}
               onClick={() => inputRef.current?.click()}
-              style={{
-                aspectRatio: '16 / 9',
-                width: '100%',
-                borderRadius: 'var(--dsw-radius-xl)',
-                border: '0.5px dashed var(--dsw-alias-border-l4)',
-                background: 'transparent',
-                color: 'var(--dsw-alias-label-secondary)',
-                font: 'inherit',
-                fontSize: 13,
-                cursor: 'pointer',
-                opacity: disabled || !storageAvailable || gallery.length >= MAX_WALLPAPERS ? 0.5 : 1,
-              }}
+              style={{ aspectRatio: '16 / 9', width: '100%', height: 'auto', borderStyle: 'dashed' }}
             >
               {copy('image.add')}
-            </button>
+            </Button>
             <input
               ref={inputRef}
               type="file"

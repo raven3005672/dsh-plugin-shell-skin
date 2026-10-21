@@ -21,7 +21,7 @@ import wallpaperArc from '../../assets/wallpaper-arc.jpg'
 import wallpaperAurora from '../../assets/wallpaper-aurora.jpg'
 import { en, zh, type SkinKey } from './locales.ts'
 import { SkinSettingsSection } from './SkinSettingsSection.tsx'
-import { addWallpaper, loadActiveId, loadWallpapers, removeWallpaper, saveActiveId, type StoredWallpaper } from './wallpaper-store.ts'
+import { addWallpaper, loadActiveId, loadLastPick, loadWallpapers, removeWallpaper, saveActiveId, saveLastPick, type StoredWallpaper } from './wallpaper-store.ts'
 
 
 /**
@@ -32,11 +32,26 @@ import { addWallpaper, loadActiveId, loadWallpapers, removeWallpaper, saveActive
 const NAV_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">`
   + `<path fill="#000" d="M870 126H663.8c-17.4 0-32.9 11.9-37 29.3C614.3 208.1 567 246 512 246s-102.3-37.9-114.8-90.7a37.93 37.93 0 0 0-37-29.3H154a44 44 0 0 0-44 44v252a44 44 0 0 0 44 44h75v388a44 44 0 0 0 44 44h478a44 44 0 0 0 44-44V466h75a44 44 0 0 0 44-44V170a44 44 0 0 0-44-44zm-28 268H723v432H301V394H182V198h153.3c28.2 71.2 97.5 120 176.7 120s148.5-48.8 176.7-120H842v196z"/></svg>`
 
-/** Bundled artwork choices, keyed by the setting value. */
-const PRESETS: Record<string, string> = {
-  classic: wallpaper,
-  aurora: wallpaperAurora,
-  arc: wallpaperArc,
+/** Bundled artwork choices, in settings order. */
+const PRESETS: readonly { id: string; src: string; labelKey: SkinKey }[] = [
+  { id: 'classic', src: wallpaper, labelKey: 'preset.classic' },
+  { id: 'aurora', src: wallpaperAurora, labelKey: 'preset.aurora' },
+  { id: 'arc', src: wallpaperArc, labelKey: 'preset.arc' },
+]
+
+/** Fast lookup for the applied background. */
+const PRESET_SOURCES: Record<string, string> = Object.fromEntries(PRESETS.map(item => [item.id, item.src]))
+
+/** Preset used when the config names one that no longer ships. */
+const DEFAULT_PRESET = 'classic'
+
+/**
+ * Normalise a preset id from config.
+ * @param value - the raw value, possibly stale or hand-edited.
+ * @returns a known preset id.
+ */
+function presetId(value: unknown): string {
+  return typeof value === 'string' && value in PRESET_SOURCES ? value : DEFAULT_PRESET
 }
 
 /** Copy namespace this plugin owns. */
@@ -96,6 +111,11 @@ const FALLBACK_SETTINGS: SkinSettings = {
   bundledPreset: 'classic',
 }
 
+/** Accept only a hex colour from the injected settings. */
+function hexColor(value: string | undefined, fallback: string): string {
+  return value !== undefined && /^#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(value) ? value : fallback
+}
+
 /** Read `__SHELL_SKIN__`, falling back when the row is mounted without a host injection. */
 function readSettings(): SkinSettings {
   const injected = (globalThis as Record<string, unknown>).__SHELL_SKIN__ as Partial<SkinSettings> | undefined
@@ -103,14 +123,14 @@ function readSettings(): SkinSettings {
     splash: injected?.splash ?? FALLBACK_SETTINGS.splash,
     lightOpacity: injected?.lightOpacity ?? FALLBACK_SETTINGS.lightOpacity,
     darkOpacity: injected?.darkOpacity ?? FALLBACK_SETTINGS.darkOpacity,
-    bootColorLight: injected?.bootColorLight ?? FALLBACK_SETTINGS.bootColorLight,
-    bootColorDark: injected?.bootColorDark ?? FALLBACK_SETTINGS.bootColorDark,
+    bootColorLight: hexColor(injected?.bootColorLight, FALLBACK_SETTINGS.bootColorLight),
+    bootColorDark: hexColor(injected?.bootColorDark, FALLBACK_SETTINGS.bootColorDark),
     sidebarWallpaper: injected?.sidebarWallpaper ?? FALLBACK_SETTINGS.sidebarWallpaper,
     sidebarOpacity: injected?.sidebarOpacity ?? FALLBACK_SETTINGS.sidebarOpacity,
     customWallpaper: injected?.customWallpaper ?? FALLBACK_SETTINGS.customWallpaper,
     randomWallpaper: injected?.randomWallpaper ?? FALLBACK_SETTINGS.randomWallpaper,
     bundledWallpaper: injected?.bundledWallpaper ?? FALLBACK_SETTINGS.bundledWallpaper,
-    bundledPreset: injected?.bundledPreset ?? FALLBACK_SETTINGS.bundledPreset,
+    bundledPreset: presetId(injected?.bundledPreset ?? FALLBACK_SETTINGS.bundledPreset),
     version: injected?.version,
   }
 }
@@ -329,6 +349,10 @@ export function apply(ctx: Context): void {
   let activeId: string | undefined
   /** Chosen once per page load while random mode is on, so sliders do not reshuffle. */
   let randomPickId: string | undefined
+  /** The image random mode chose last start, so the next one differs. */
+  let lastPickId: string | undefined
+  /** Settings rows asking to repaint their gallery after a store write. */
+  const wallpaperListeners = new Set<() => void>()
   let currentValues = settings
   let disposeTokens: (() => void) | undefined
   let disposeSplash: (() => void) | undefined
@@ -373,11 +397,23 @@ export function apply(ctx: Context): void {
     wallpaperUrls.clear()
   }
 
-  /** Pick a stored image at random, avoiding the active one when there is a choice. */
+  /** Pick a stored image at random, avoiding last start's pick when there is a choice. */
   const pickRandom = (): string | undefined => {
     if (wallpapers.length === 0) return undefined
-    const pool = wallpapers.length > 1 ? wallpapers.filter(item => item.id !== activeId) : wallpapers
-    return pool[Math.floor(Math.random() * pool.length)]?.id
+    const pool = wallpapers.length > 1 && lastPickId !== undefined
+      ? wallpapers.filter(item => item.id !== lastPickId)
+      : wallpapers
+    const picked = pool[Math.floor(Math.random() * pool.length)]?.id
+    if (picked !== undefined) {
+      lastPickId = picked
+      void saveLastPick(picked).catch(() => { /* the pick still applies for this load */ })
+    }
+    return picked
+  }
+
+  /** Tell mounted settings rows that the stored images changed. */
+  const notifyWallpapers = (): void => {
+    for (const listener of wallpaperListeners) listener()
   }
 
   /** Apply the wallpaper the current settings ask for. */
@@ -397,7 +433,7 @@ export function apply(ctx: Context): void {
     }
     delete root.dataset.shellSkinWallpaper
     if (currentValues.bundledWallpaper) {
-      const preset = PRESETS[currentValues.bundledPreset] ?? PRESETS.classic
+      const preset = PRESET_SOURCES[currentValues.bundledPreset] ?? PRESET_SOURCES[DEFAULT_PRESET]
       root.style.setProperty('--shell-skin-bundled', `url("${preset}")`)
       root.style.removeProperty('--shell-skin-wallpaper')
       return
@@ -440,13 +476,13 @@ export function apply(ctx: Context): void {
       preview: (patch: Partial<SkinSettings>) => { applyNow({ ...currentValues, ...patch }) },
       form: ctx.configForms.get(SETTINGS_NAMESPACE),
       version: currentValues.version,
-      presets: [
-        { id: 'classic', src: wallpaper, labelKey: 'preset.classic' },
-        { id: 'aurora', src: wallpaperAurora, labelKey: 'preset.aurora' },
-        { id: 'arc', src: wallpaperArc, labelKey: 'preset.arc' },
-      ],
+      presets: PRESETS,
       // Uploads never reach the Host: files stay in this browser's IndexedDB
       // and only their Blob URLs are applied.
+      subscribeWallpapers: (listener: () => void) => {
+        wallpaperListeners.add(listener)
+        return () => { wallpaperListeners.delete(listener) }
+      },
       listWallpapers: () => wallpapers.map(image => ({
         id: image.id,
         ...image.name === undefined ? {} : { name: image.name },
@@ -460,6 +496,7 @@ export function apply(ctx: Context): void {
           activeId = added.id
           await saveActiveId(activeId)
         }
+        notifyWallpapers()
         applyWallpaper()
       },
       removeWallpaper: async (id: string) => {
@@ -470,11 +507,13 @@ export function apply(ctx: Context): void {
           activeId = wallpapers[0]?.id
           await saveActiveId(activeId)
         }
+        notifyWallpapers()
         applyWallpaper()
       },
       selectWallpaper: async (id: string) => {
         activeId = id
         await saveActiveId(id)
+        notifyWallpapers()
         applyWallpaper()
       },
     }),
@@ -509,7 +548,13 @@ export function apply(ctx: Context): void {
       }
     }
 
-    const observer = new MutationObserver(() => { apply() })
+    let scheduled = false
+    const schedule = (): void => {
+      if (scheduled) return
+      scheduled = true
+      requestAnimationFrame(() => { scheduled = false; apply() })
+    }
+    const observer = new MutationObserver(schedule)
     observer.observe(document.body, { childList: true, subtree: true })
     apply()
     return () => { observer.disconnect(); style.remove() }
@@ -530,10 +575,15 @@ export function apply(ctx: Context): void {
       try {
         wallpapers = await loadWallpapers()
         activeId = await loadActiveId()
+        lastPickId = await loadLastPick()
         if (activeId !== undefined && !wallpapers.some(image => image.id === activeId)) {
           activeId = wallpapers[0]?.id
         }
+        if (lastPickId !== undefined && !wallpapers.some(image => image.id === lastPickId)) {
+          lastPickId = undefined
+        }
         if (!live) return
+        notifyWallpapers()
         applyWallpaper()
       } catch {
         /* storage refused the read; the settings choose the fallback */

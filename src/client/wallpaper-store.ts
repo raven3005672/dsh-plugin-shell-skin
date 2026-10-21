@@ -16,6 +16,7 @@ const DATABASE = 'shell-skin'
 const STORE = 'assets'
 const KEY = 'wallpapers'
 const ACTIVE = 'active'
+const LAST_PICK = 'last-pick'
 const LEGACY = 'wallpaper'
 
 /** How many uploads the store keeps. */
@@ -122,13 +123,36 @@ export async function removeWallpaper(id: string): Promise<StoredWallpaper[]> {
 }
 
 /**
+ * Read one string record.
+ * @param key - record key.
+ * @returns the stored string, or undefined.
+ */
+async function readString(key: string): Promise<string | undefined> {
+  if (!wallpaperStorageAvailable()) return undefined
+  const stored = await transact<unknown>('readonly', store => store.get(key))
+  return typeof stored === 'string' ? stored : undefined
+}
+
+/**
+ * Write or clear one string record.
+ * @param key - record key.
+ * @param value - the string to store, or undefined to delete.
+ */
+async function writeString(key: string, value: string | undefined): Promise<void> {
+  if (!wallpaperStorageAvailable()) return
+  if (value === undefined) {
+    await transact('readwrite', store => store.delete(key))
+    return
+  }
+  await transact('readwrite', store => store.put(value, key))
+}
+
+/**
  * Read the active image id.
  * @returns the id, or undefined when nothing is selected.
  */
 export async function loadActiveId(): Promise<string | undefined> {
-  if (!wallpaperStorageAvailable()) return undefined
-  const stored = await transact<unknown>('readonly', store => store.get(ACTIVE))
-  return typeof stored === 'string' ? stored : undefined
+  return readString(ACTIVE)
 }
 
 /**
@@ -136,10 +160,21 @@ export async function loadActiveId(): Promise<string | undefined> {
  * @param id - the id to remember, or undefined to clear it.
  */
 export async function saveActiveId(id: string | undefined): Promise<void> {
-  if (!wallpaperStorageAvailable()) return
-  if (id === undefined) {
-    await transact('readwrite', store => store.delete(ACTIVE))
-    return
-  }
-  await transact('readwrite', store => store.put(id, ACTIVE))
+  await writeString(ACTIVE, id)
+}
+
+/**
+ * Read the image random mode picked last time, so the next start differs.
+ * @returns the id, or undefined when nothing was picked yet.
+ */
+export async function loadLastPick(): Promise<string | undefined> {
+  return readString(LAST_PICK)
+}
+
+/**
+ * Persist the image random mode picked, for the next start to avoid.
+ * @param id - the id to remember.
+ */
+export async function saveLastPick(id: string | undefined): Promise<void> {
+  await writeString(LAST_PICK, id)
 }

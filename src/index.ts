@@ -65,6 +65,16 @@ export const Config = z.object({
 })
 
 /**
+ * Accept only a hex colour from config; anything else keeps the fallback.
+ * @param value - raw config value.
+ * @param fallback - colour to use when the value is not a hex colour.
+ * @returns a safe CSS colour.
+ */
+function hexColor(value: string, fallback: string): string {
+  return /^#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(value) ? value : fallback
+}
+
+/**
  * CSS for the pre-plugin interval. The boot page paints with the same alias
  * tokens the app uses, so overriding them here keeps the first paint in the
  * skin's colors instead of the default canvas.
@@ -72,8 +82,8 @@ export const Config = z.object({
  * @returns one stylesheet body for the index head.
  */
 function bootStyle(config: Config): string {
-  const light = config.bootColorLight.get()
-  const dark = config.bootColorDark.get()
+  const light = hexColor(config.bootColorLight.get(), '#ffffff')
+  const dark = hexColor(config.bootColorDark.get(), '#0c0f15')
   return `html body{background:${light};--dsw-alias-bg-base:${light}}`
     + `html body[data-ds-dark-theme]{background:${dark};--dsw-alias-bg-base:${dark}}`
 }
@@ -94,8 +104,8 @@ export function apply(ctx: Context, config: Config): void {
         splash: config.splash.get(),
         lightOpacity: config.lightOpacity.get(),
         darkOpacity: config.darkOpacity.get(),
-        bootColorLight: config.bootColorLight.get(),
-        bootColorDark: config.bootColorDark.get(),
+        bootColorLight: hexColor(config.bootColorLight.get(), '#ffffff'),
+        bootColorDark: hexColor(config.bootColorDark.get(), '#0c0f15'),
         sidebarWallpaper: config.sidebarWallpaper.get(),
         sidebarOpacity: config.sidebarOpacity.get(),
         customWallpaper: config.customWallpaper.get(),
