@@ -1,11 +1,11 @@
 {
   "name": "dsh-plugin-shell-skin",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "A browser-only skin for DeepSeek Harness: a startup flourish and a custom app background.",
   "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@11.28.5",
-  "icon": "icon.svg",
+  "icon": "icon.png",
   "main": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
@@ -18,8 +18,8 @@
     "lib",
     "cordis.patch.yml",
     "locale",
-    "icon.svg",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "icon.png"
   ],
   "keywords": [
     "dsh",
