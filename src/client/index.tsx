@@ -24,10 +24,13 @@ import { SkinSettingsSection } from './SkinSettingsSection.tsx'
 import { addWallpaper, loadActiveId, loadWallpapers, removeWallpaper, saveActiveId, type StoredWallpaper } from './wallpaper-store.ts'
 
 
-/** Filled tee glyph: clear sleeve notches, no thin strokes. */
-const NAV_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="#000">`
-  + `<path d="M5.3 3.1 2.1 4.9l1.7 3 1.5-.8V13h5.4V7.1l1.5.8 1.7-3-3.2-1.8c-.4.6-1 1-1.9 1s-1.5-.4-1.9-1Z"/>`
-  + `</svg>`
+/**
+ * T-shirt glyph from Ant Design Icons' `SkinOutlined` (MIT license), used as the
+ * Settings nav mark. The path is a compound outline: the neckline and body are
+ * cutouts, so it keeps a clean weight at 16px without extra strokes.
+ */
+const NAV_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">`
+  + `<path fill="#000" d="M870 126H663.8c-17.4 0-32.9 11.9-37 29.3C614.3 208.1 567 246 512 246s-102.3-37.9-114.8-90.7a37.93 37.93 0 0 0-37-29.3H154a44 44 0 0 0-44 44v252a44 44 0 0 0 44 44h75v388a44 44 0 0 0 44 44h478a44 44 0 0 0 44-44V466h75a44 44 0 0 0 44-44V170a44 44 0 0 0-44-44zm-28 268H723v432H301V394H182V198h153.3c28.2 71.2 97.5 120 176.7 120s148.5-48.8 176.7-120H842v196z"/></svg>`
 
 /** Bundled artwork choices, keyed by the setting value. */
 const PRESETS: Record<string, string> = {
