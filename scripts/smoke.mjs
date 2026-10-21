@@ -27,8 +27,10 @@ const source = readFileSync(join(pkgRoot, 'lib/client.js'), 'utf8')
 
 // apply() injects its stylesheet through the DOM; a bare stub is enough here.
 globalThis.document = {
-  documentElement: { style: { setProperty() {}, removeProperty() {} } },
-  createElement: () => ({ textContent: '', remove() {} }),
+  documentElement: { style: { setProperty() {}, removeProperty() {} }, dataset: {} },
+  createElement: () => ({ textContent: '', dataset: {}, remove() {} }),
+  querySelector: () => null,
+  body: {},
   head: { appendChild() {} },
 }
 
@@ -36,6 +38,7 @@ globalThis.document = {
 function loadBundle() {
   let registration
   globalThis.window = { __ModuleLoader__: { load: value => { registration = value } } }
+  globalThis.MutationObserver = class { observe() {} disconnect() {} }
   new Function('window', 'require', source)(globalThis.window, require)
   assert.equal(registration.id, pkg.name, 'bundle id must equal the package name')
   return registration.factory(require)
