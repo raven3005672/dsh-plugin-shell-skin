@@ -24,10 +24,10 @@ import { SkinSettingsSection } from './SkinSettingsSection.tsx'
 import { addWallpaper, loadActiveId, loadWallpapers, removeWallpaper, saveActiveId, type StoredWallpaper } from './wallpaper-store.ts'
 
 
-/** Filled clothing glyph, matching the weight of the shell's own nav icons. */
-const NAV_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">`
-  + `<path d="M5.8 2.4 2.4 4.4l1.2 2.4 1.6-.9V13h5.6V5.9l1.6.9 1.2-2.4-3.4-2c-.3.5-1 .8-2.2.8s-1.9-.3-2.2-.8Z" `
-  + `fill="none" stroke="#000" stroke-width="1.3" stroke-linejoin="round"/></svg>`
+/** Filled tee glyph: clear sleeve notches, no thin strokes. */
+const NAV_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="#000">`
+  + `<path d="M5.3 3.1 2.1 4.9l1.7 3 1.5-.8V13h5.4V7.1l1.5.8 1.7-3-3.2-1.8c-.4.6-1 1-1.9 1s-1.5-.4-1.9-1Z"/>`
+  + `</svg>`
 
 /** Bundled artwork choices, keyed by the setting value. */
 const PRESETS: Record<string, string> = {
