@@ -24,6 +24,11 @@ import { SkinSettingsSection } from './SkinSettingsSection.tsx'
 import { addWallpaper, loadActiveId, loadWallpapers, removeWallpaper, saveActiveId, type StoredWallpaper } from './wallpaper-store.ts'
 
 
+/** Clothing glyph used for this plugin's Settings nav entry. */
+const NAV_ICON = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">`
+  + `<path d="M4 5.2 6.2 3.4a1.8 1.8 0 0 0 3.6 0L12 5.2l-1.3 1.4V13H5.3V6.6L4 5.2Z" `
+  + `stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>`
+
 /** Bundled artwork choices, keyed by the setting value. */
 const PRESETS: Record<string, string> = {
   classic: wallpaper,
@@ -471,6 +476,37 @@ export function apply(ctx: Context): void {
       },
     }),
   }, SkinSettingsSection))
+
+  // The Settings shell picks nav icons from a fixed id map, so a plugin cannot
+  // declare one. Swap the glyph on our own entry instead: hide the default svg
+  // and prepend ours, re-applying after the dialog re-renders.
+  ctx.effect(() => {
+    const style = document.createElement('style')
+    style.textContent = `[data-shell-skin-nav]>svg{display:none}`
+      + `[data-shell-skin-nav]>.shell-skin-nav-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;color:currentColor}`
+    document.head.appendChild(style)
+
+    const apply = (): void => {
+      const dialog = document.querySelector('[data-shortcut-modal="settings"]')
+      if (dialog === null) return
+      const label = ctx.locale.bind(LOCALE_NS)('nav')
+      for (const button of dialog.querySelectorAll('nav button')) {
+        if (button.textContent?.trim() !== label) continue
+        if (button.hasAttribute('data-shell-skin-nav')) continue
+        button.setAttribute('data-shell-skin-nav', '')
+        const holder = document.createElement('span')
+        holder.className = 'shell-skin-nav-icon'
+        holder.setAttribute('aria-hidden', 'true')
+        holder.innerHTML = NAV_ICON
+        button.insertBefore(holder, button.firstChild)
+      }
+    }
+
+    const observer = new MutationObserver(() => { apply() })
+    observer.observe(document.body, { childList: true, subtree: true })
+    apply()
+    return () => { observer.disconnect(); style.remove() }
+  })
 
   ctx.effect(() => {
     const style = document.createElement('style')
