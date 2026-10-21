@@ -128,6 +128,7 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
   const [gallery, setGallery] = useState<readonly { id: string; name?: string; url: string }[]>([])
   const [active, setActive] = useState<string | undefined>(undefined)
   const [copied, setCopied] = useState(false)
+  const [saveFailed, setSaveFailed] = useState(false)
   const [wallpaperError, setWallpaperError] = useState<string | undefined>(undefined)
   const [storageAvailable] = useState(() => wallpaperStorageAvailable())
   const inputRef = useRef<HTMLInputElement>(null)
@@ -135,6 +136,8 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
   const commitTimer = useRef<number | undefined>(undefined)
   /** Latest commit, so unmount can flush without capturing a stale closure. */
   const flushRef = useRef<() => void>(() => {})
+  /** Fences draft cleanup: an older write must not hide a newer edit. */
+  const writeSeq = useRef(0)
   /** Re-read the gallery after a write. */
   const refreshGallery = (): void => {
     setGallery(listWallpapers?.() ?? [])
@@ -179,7 +182,13 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
     ))
     if (ops.length === 0) return
     pending.current = {}
-    void form.mutate(ops).then(accepted => { if (accepted) setDraft({}) })
+    const seq = ++writeSeq.current
+    const settle = (accepted: boolean): void => {
+      if (seq !== writeSeq.current) return
+      setDraft({})
+      setSaveFailed(!accepted)
+    }
+    void form.mutate(ops).then(settle).catch(() => { settle(false) })
   }
   const commitSoon = (): void => {
     window.clearTimeout(commitTimer.current)
@@ -289,7 +298,11 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
       op: 'unset' as const,
       path: [field],
     }))
-    void form.mutate(ops, state.revision)
+    const seq = ++writeSeq.current
+    void form.mutate(ops, state.revision).then(accepted => {
+      if (seq !== writeSeq.current) return
+      setSaveFailed(!accepted)
+    }).catch(() => { if (seq === writeSeq.current) setSaveFailed(true) })
   }
   const disabled = !state.writable
 
@@ -583,6 +596,7 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
 
       {storageAvailable ? null : <p style={hint}>{copy('image.unavailable')}</p>}
       {wallpaperError === undefined ? null : <p style={hint}>{wallpaperError}</p>}
+      {saveFailed ? <p style={hint}>{copy('save.failed')}</p> : null}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
         <Button size="sm" variant="outline" disabled={disabled} onClick={restoreDefaults}>
