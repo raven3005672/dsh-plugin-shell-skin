@@ -235,11 +235,11 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
       commit()
     }
   }
-  const removeSelected = async (): Promise<void> => {
-    if (active === undefined || removeWallpaper === undefined) return
+  const removeOne = async (id: string): Promise<void> => {
+    if (removeWallpaper === undefined) return
     try {
       setWallpaperError(undefined)
-      await removeWallpaper(active)
+      await removeWallpaper(id)
       refreshGallery()
     } catch (error) {
       setWallpaperError(storageMessage(error))
@@ -481,27 +481,37 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
           </span>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
             {gallery.map(item => (
-              <button
-                key={item.id}
-                type="button"
-                aria-label={item.name ?? copy('image.title')}
-                aria-pressed={active === item.id}
-                data-wallpaper-thumb={item.id}
-                onClick={() => { void chooseWallpaper(item.id) }}
-                style={{
-                  padding: 0,
-                  width: '100%',
-                  aspectRatio: '16 / 9',
-                  overflow: 'hidden',
-                  borderRadius: 'var(--dsw-radius-xl)',
-                  cursor: 'pointer',
-                  background: 'transparent',
-                  border: '0.5px solid var(--dsw-alias-border-l4)',
-                  boxShadow: active === item.id ? '0 0 0 2px var(--dsw-static-neutral-bluish-400)' : 'none',
-                }}
-              >
-                <img src={item.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-              </button>
+              <div key={item.id} className="shell-skin-thumb" style={{ position: 'relative' }}>
+                <button
+                  type="button"
+                  aria-label={item.name ?? copy('image.title')}
+                  aria-pressed={active === item.id}
+                  data-wallpaper-thumb={item.id}
+                  onClick={() => { void chooseWallpaper(item.id) }}
+                  style={{
+                    padding: 0,
+                    width: '100%',
+                    aspectRatio: '16 / 9',
+                    overflow: 'hidden',
+                    borderRadius: 'var(--dsw-radius-xl)',
+                    cursor: 'pointer',
+                    background: 'transparent',
+                    border: '0.5px solid var(--dsw-alias-border-l4)',
+                    boxShadow: active === item.id ? '0 0 0 2px var(--dsw-static-neutral-bluish-400)' : 'none',
+                  }}
+                >
+                  <img src={item.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                </button>
+                <button
+                  type="button"
+                  className="shell-skin-thumb-delete"
+                  aria-label={item.name === undefined ? copy('image.delete') : `${copy('image.delete')} ${item.name}`}
+                  data-wallpaper-delete={item.id}
+                  onClick={() => { void removeOne(item.id) }}
+                >
+                  ×
+                </button>
+              </div>
             ))}
             <Button
               size="sm"
@@ -524,17 +534,7 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
               }}
             />
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={disabled || active === undefined}
-              onClick={() => { void removeSelected() }}
-            >
-              {copy('image.removeSelected')}
-            </Button>
-            {gallery.length >= MAX_WALLPAPERS ? <span style={hint}>{copy('image.max')}</span> : null}
-          </div>
+          {gallery.length >= MAX_WALLPAPERS ? <span style={hint}>{copy('image.max')}</span> : null}
         </div>
       ) : null}
 

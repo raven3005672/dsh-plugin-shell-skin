@@ -309,6 +309,36 @@ const SKIN_CSS = `
   /* The conversation column paints the same base token again above the frame,
      so its wallpaper reads double-tinted next to a global panel. Neutralise
      that layer; the phase attribute is the only stable hook it exposes. */
+  /* Per-thumbnail delete: hidden until the tile is hovered or holds focus. */
+  .shell-skin-thumb .shell-skin-thumb-delete {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: #d92d20;
+    color: #fff;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+  }
+  .shell-skin-thumb:hover .shell-skin-thumb-delete,
+  .shell-skin-thumb:focus-within .shell-skin-thumb-delete {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  @media (hover: none) {
+    .shell-skin-thumb .shell-skin-thumb-delete { opacity: 1; pointer-events: auto; }
+  }
   html [data-phase='hero'],
   html [data-phase='active'],
   html [data-phase='settling'] {
