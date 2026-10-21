@@ -309,7 +309,7 @@ const SKIN_CSS = `
   /* The conversation column paints the same base token again above the frame,
      so its wallpaper reads double-tinted next to a global panel. Neutralise
      that layer; the phase attribute is the only stable hook it exposes. */
-  /* Per-thumbnail delete: hidden until the tile is hovered or holds focus. */
+  /* Per-thumbnail delete: a quiet chip that only turns red on its own hover. */
   .shell-skin-thumb .shell-skin-thumb-delete {
     position: absolute;
     top: 6px;
@@ -320,21 +320,27 @@ const SKIN_CSS = `
     align-items: center;
     justify-content: center;
     padding: 0;
-    border: none;
+    border: 0.5px solid var(--dsw-alias-border-l3);
     border-radius: 50%;
-    background: #d92d20;
-    color: #fff;
-    font-size: 14px;
-    line-height: 1;
+    background: var(--dsw-alias-bg-module-platform);
+    color: var(--dsw-alias-label-secondary);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
     cursor: pointer;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 120ms ease;
+    transition: opacity 120ms ease, background-color 120ms ease, color 120ms ease;
   }
   .shell-skin-thumb:hover .shell-skin-thumb-delete,
   .shell-skin-thumb:focus-within .shell-skin-thumb-delete {
     opacity: 1;
     pointer-events: auto;
+  }
+  .shell-skin-thumb .shell-skin-thumb-delete:hover,
+  .shell-skin-thumb .shell-skin-thumb-delete:focus-visible {
+    background: var(--dsw-alias-interactive-bg-hover-danger);
+    color: var(--dsw-alias-state-error-primary);
+    outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+    outline-offset: 1px;
   }
   @media (hover: none) {
     .shell-skin-thumb .shell-skin-thumb-delete { opacity: 1; pointer-events: auto; }

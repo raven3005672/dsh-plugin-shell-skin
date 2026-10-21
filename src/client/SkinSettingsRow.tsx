@@ -497,7 +497,7 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
                     cursor: 'pointer',
                     background: 'transparent',
                     border: '0.5px solid var(--dsw-alias-border-l4)',
-                    boxShadow: active === item.id ? '0 0 0 2px var(--dsw-static-neutral-bluish-400)' : 'none',
+                    boxShadow: active === item.id ? '0 0 0 2px var(--dsw-alias-state-business-primary)' : 'none',
                   }}
                 >
                   <img src={item.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -509,7 +509,9 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
                   data-wallpaper-delete={item.id}
                   onClick={() => { void removeOne(item.id) }}
                 >
-                  ×
+                  <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+                    <path d="M1.2 1.2 8.8 8.8M8.8 1.2 1.2 8.8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                  </svg>
                 </button>
               </div>
             ))}
@@ -579,7 +581,7 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
                   cursor: 'pointer',
                   background: 'transparent',
                   border: '0.5px solid var(--dsw-alias-border-l4)',
-                  boxShadow: selected ? '0 0 0 2px var(--dsw-static-neutral-bluish-400)' : 'none',
+                  boxShadow: selected ? '0 0 0 2px var(--dsw-alias-state-business-primary)' : 'none',
                   opacity: disabled || !value.bundledWallpaper ? 0.5 : 1,
                 }}
               >
