@@ -16,6 +16,14 @@ export const name = 'shell-skin'
 /** No host service is required: the injection table is an emit on the shared Context. */
 export const inject: string[] = []
 
+/** Injected by the build from package.json. */
+declare const __PKG_VERSION__: string
+
+/** Package version, baked in at build time for the settings footer. */
+function packageVersion(): string | undefined {
+  return typeof __PKG_VERSION__ === 'string' ? __PKG_VERSION__ : undefined
+}
+
 /** Settings that reach the browser half and the pre-plugin stylesheet. */
 export interface Config {
   /** Play the startup flourish on every page load. */
@@ -86,6 +94,7 @@ export function apply(ctx: Context, config: Config): void {
         sidebarOpacity: config.sidebarOpacity.get(),
         customWallpaper: config.customWallpaper.get(),
         bundledWallpaper: config.bundledWallpaper.get(),
+        version: packageVersion(),
       },
     })
   })

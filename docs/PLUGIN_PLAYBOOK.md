@@ -196,8 +196,10 @@ form.mutate([{ op: 'set', path: ['opacity'], value: 0.5 }], revision)
 
 UI 写法上的两个经验：
 
+- **hook 顺序**：所有 `useState` / `useEffect` 必须写在任何提前 `return` 之前，否则加载态切到就绪态时会抛 hook 数量不一致；
 - **滑块**：拖动时只 `preview` 本地重绘，`pointerup/keyup/blur` 时提交一次，否则每像素一次写回，界面会卡；
-- **颜色输入**：`change` 触发非常密，加 350ms 防抖再提交。
+- **颜色输入**：`change` 触发非常密，加 350ms 防抖再提交；
+- **上传文件**：先校验 MIME、大小（我们定 10 MB）和存储可用性，再落盘；错误要有具体文案。
 
 ---
 

@@ -8,6 +8,7 @@
  */
 import { Button, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { en, type SkinKey } from './locales.ts'
+import { wallpaperStorageAvailable } from './wallpaper-store.ts'
 import { useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 
@@ -32,6 +33,9 @@ export interface SkinConfigValues {
   /** Fall back to the artwork shipped with the plugin. */
   bundledWallpaper: boolean
 }
+
+/** Largest image the browser store accepts, in bytes. */
+const MAX_WALLPAPER_BYTES = 10 * 1024 * 1024
 
 /** One settings write the Plugins page accepts. */
 export interface SkinConfigOp {
@@ -71,6 +75,8 @@ export interface SkinSettingsRowProps {
   wallpaperName?(): string | undefined
   /** Whether this browser already holds a wallpaper. */
   hasWallpaper?(): boolean
+  /** Plugin version, shown at the bottom of the page. */
+  version?: string
   /** Row settings face, absent while the namespace is not served. */
   form?: {
     state: SkinConfigState
@@ -100,7 +106,7 @@ const DEFAULTS: SkinConfigValues = {
  * @param props - owner props supplied by the Plugins page.
  * @returns the description line, the form, or null while nothing is known.
  */
-export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpaper, wallpaperName, hasWallpaper, t }: SkinSettingsRowProps): ReactElement | null {
+export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpaper, wallpaperName, hasWallpaper, version, t }: SkinSettingsRowProps): ReactElement | null {
   // Dragging a range fires `change` per pixel. Staging the preview locally and
   // committing once on release keeps the Host at one write per gesture instead
   // of one per frame.
@@ -109,6 +115,8 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
   const [draft, setDraft] = useState<Partial<SkinConfigValues>>({})
   const [pickedName, setPickedName] = useState<string | undefined>(undefined)
   const [stored, setStored] = useState(false)
+  const [wallpaperError, setWallpaperError] = useState<string | undefined>(undefined)
+  const [storageAvailable] = useState(() => wallpaperStorageAvailable())
   const inputRef = useRef<HTMLInputElement>(null)
   const pending = useRef<Partial<SkinConfigValues>>({})
   const commitTimer = useRef<number | undefined>(undefined)
@@ -154,11 +162,18 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
     window.clearTimeout(commitTimer.current)
     commitTimer.current = window.setTimeout(() => { commit() }, 350)
   }
-  const [wallpaperError, setWallpaperError] = useState<string | undefined>(undefined)
   const pickWallpaper = async (file: File | undefined): Promise<void> => {
     if (file === undefined || setWallpaper === undefined) return
+    if (!storageAvailable) {
+      setWallpaperError(copy('image.errorUnavailable'))
+      return
+    }
     if (!file.type.startsWith('image/')) {
       setWallpaperError(copy('image.errorType'))
+      return
+    }
+    if (file.size > MAX_WALLPAPER_BYTES) {
+      setWallpaperError(copy('image.errorTooLarge'))
       return
     }
     try {
@@ -180,6 +195,15 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
     } catch (error) {
       setWallpaperError(error instanceof Error ? error.message : copy('image.errorClear'))
     }
+  }
+  const restoreDefaults = (): void => {
+    pending.current = {}
+    setDraft({})
+    const ops = (Object.keys(DEFAULTS) as (keyof SkinConfigValues)[]).map(field => ({
+      op: 'unset' as const,
+      path: [field],
+    }))
+    void form.mutate(ops, state.revision)
   }
   const disabled = !state.writable
 
@@ -378,7 +402,7 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
             <Button
               size="sm"
               variant="outline"
-              disabled={disabled}
+              disabled={disabled || !storageAvailable}
               style={{ whiteSpace: 'nowrap' }}
               onClick={() => inputRef.current?.click()}
             >
@@ -397,9 +421,18 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
         </div>
       ) : null}
 
+      {storageAvailable ? null : <p style={hint}>{copy('image.unavailable')}</p>}
       {wallpaperError === undefined ? null : <p style={hint}>{wallpaperError}</p>}
 
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+        <Button size="sm" variant="outline" disabled={disabled} onClick={restoreDefaults}>
+          {copy('reset.label')}
+        </Button>
+        <span style={hint}>{copy('reset.hint')}</span>
+      </div>
+
       {state.writable ? null : <p style={hint}>{copy('profile.locked')}</p>}
+      {version === undefined ? null : <p style={hint}>{`${copy('version.label')} ${version}`}</p>}
     </div>
   )
 }

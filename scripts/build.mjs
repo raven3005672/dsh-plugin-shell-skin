@@ -55,6 +55,7 @@ export async function buildPlugin(packageDir = defaultRoot, options = {}) {
     platform: 'node',
     target: 'node22',
     external: [...HOST_EXTERNAL, ...(options.hostExternal ?? [])],
+    define: { __PKG_VERSION__: JSON.stringify(pkg.version) },
     logLevel: 'warning',
   })
 

@@ -57,6 +57,8 @@ interface SkinSettings {
   customWallpaper: boolean
   /** Fall back to the artwork shipped with the plugin. */
   bundledWallpaper: boolean
+  /** Package version, injected by the host for the settings footer. */
+  version?: string
 }
 
 const FALLBACK_SETTINGS: SkinSettings = {
@@ -84,6 +86,7 @@ function readSettings(): SkinSettings {
     sidebarOpacity: injected?.sidebarOpacity ?? FALLBACK_SETTINGS.sidebarOpacity,
     customWallpaper: injected?.customWallpaper ?? FALLBACK_SETTINGS.customWallpaper,
     bundledWallpaper: injected?.bundledWallpaper ?? FALLBACK_SETTINGS.bundledWallpaper,
+    version: injected?.version,
   }
 }
 
@@ -300,6 +303,22 @@ export function apply(ctx: Context): void {
   let storedWallpaperName: string | undefined
   let currentValues = settings
   let disposeTokens: (() => void) | undefined
+  let disposeSplash: (() => void) | undefined
+
+  /** Register or drop the splash seat as the setting changes. */
+  const syncSplash = (enabled: boolean): void => {
+    if (enabled) {
+      if (disposeSplash !== undefined) return
+      disposeSplash = ctx.slots.inject('shell.overlay', () => ctx.slots.register(
+        { name: 'shell.overlay', id: 'shell-skin.splash' },
+        Splash,
+      ))
+      return
+    }
+    if (disposeSplash === undefined) return
+    disposeSplash()
+    disposeSplash = undefined
+  }
 
   /** Drop the object URL backing the stored image. */
   const releaseWallpaper = (): void => {
@@ -337,16 +356,10 @@ export function apply(ctx: Context): void {
     root.style.setProperty('--shell-skin-boot-light', next.bootColorLight)
     root.style.setProperty('--shell-skin-boot-dark', next.bootColorDark)
     applyWallpaper()
+    syncSplash(next.splash)
   }
 
   applyNow(settings)
-
-  if (settings.splash) {
-    ctx.slots.inject('shell.overlay', () => ctx.slots.register(
-      { name: 'shell.overlay', id: 'shell-skin.splash' },
-      Splash,
-    ))
-  }
 
   ctx.effect(() => ctx.locale.register(LOCALE_NS, { zh, en }))
 
@@ -361,6 +374,7 @@ export function apply(ctx: Context): void {
       // The release still persists once.
       preview: (patch: Partial<SkinSettings>) => { applyNow({ ...currentValues, ...patch }) },
       form: ctx.configForms.get(SETTINGS_NAMESPACE),
+      version: currentValues.version,
       // The custom wallpaper never reaches the Host: the file stays in this
       // browser's IndexedDB and only its Blob URL is applied.
       setWallpaper: async (file: File) => {
@@ -418,6 +432,7 @@ export function apply(ctx: Context): void {
     return () => {
       unsubscribe()
       disposeTokens?.()
+      disposeSplash?.()
     }
   })
 }
