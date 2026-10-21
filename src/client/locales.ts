@@ -5,7 +5,7 @@
 
 /** Simplified Chinese copy. */
 export const zh = {
-  'nav': 'Shell 皮肤',
+  'nav': '界面皮肤',
   'splash.title': '启动动画',
   'splash.description': '每次打开页面时播放入场动画',
   'lightOpacity.title': '浅色透明度',
@@ -46,7 +46,7 @@ export type SkinKey = keyof typeof zh
 
 /** English copy, checked complete against the Chinese key set. */
 export const en: Record<SkinKey, string> = {
-  'nav': 'Shell skin',
+  'nav': 'Interface skin',
   'splash.title': 'Startup splash',
   'splash.description': 'Play the opening flourish on every page load',
   'lightOpacity.title': 'Light opacity',
