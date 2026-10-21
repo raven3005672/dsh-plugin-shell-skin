@@ -1,5 +1,13 @@
 # 更新日志
 
+## [Unreleased]
+
+### 变更
+
+- 插件卡片展示名改为「界面皮肤」/「Interface skin」，避免把 “shell” 误解为终端。
+- README 增加说明：shell 指应用外壳。
+- `keywords` 补充 splash、background、appearance、ui，改善搜索。
+
 本文件记录每个发布版本的变更。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
 ## [0.1.7] - 2026-10-21

@@ -11,6 +11,8 @@
 
 全部逻辑跑在**浏览器半边**，不碰会话、模型请求、工具，也不读写你的文件系统。
 
+> 名字里的 **shell 指应用外壳（app shell）**，不是侧栏里的终端；这个插件给整个界面换壁纸和外观，不修改终端配色。
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/raven3005672/dsh-plugin-shell-skin/master/assets/preview/home-light.jpg" width="880" alt="浅色主题：壁纸透过半透明面板">
 </p>

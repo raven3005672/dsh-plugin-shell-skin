@@ -27,7 +27,11 @@
     "dsh-plugin",
     "theme",
     "wallpaper",
-    "skin"
+    "skin",
+    "splash",
+    "background",
+    "appearance",
+    "ui"
   ],
   "homepage": "https://github.com/raven3005672/dsh-plugin-shell-skin#readme",
   "repository": {
