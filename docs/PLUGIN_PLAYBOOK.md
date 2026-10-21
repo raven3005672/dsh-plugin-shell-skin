@@ -388,4 +388,5 @@ cd deepseek-harness && pnpm dsh web --patch ../repo/dev.patch.yml
 - [ ] 刷新后状态还在（存储类功能）
 - [ ] 中英文文案都出现
 - [ ] `npm pack` 的 files 列表符合预期
+- [ ] 设置页有反馈入口与可复制的诊断信息（不含隐私数据）
 - [ ] CHANGELOG 已更新

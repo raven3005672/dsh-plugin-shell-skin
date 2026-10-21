@@ -125,6 +125,7 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
   const [draft, setDraft] = useState<Partial<SkinConfigValues>>({})
   const [gallery, setGallery] = useState<readonly { id: string; name?: string; url: string }[]>([])
   const [active, setActive] = useState<string | undefined>(undefined)
+  const [copied, setCopied] = useState(false)
   const [wallpaperError, setWallpaperError] = useState<string | undefined>(undefined)
   const [storageAvailable] = useState(() => wallpaperStorageAvailable())
   const inputRef = useRef<HTMLInputElement>(null)
@@ -220,6 +221,47 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
     setActive(id)
     await selectWallpaper(id)
   }
+  /** One block of context a bug report needs, none of it personal. */
+  const diagnostics = (): string => [
+    `version: ${version ?? 'unknown'}`,
+    `platform: ${document.documentElement.dataset.platform ?? 'web'}`,
+    `locale: ${document.documentElement.lang || navigator.language}`,
+    `settings: splash=${value.splash}, light=${value.lightOpacity}, dark=${value.darkOpacity}, `
+      + `sidebar=${value.sidebarWallpaper ? value.sidebarOpacity : 'off'}, `
+      + `bundled=${value.bundledWallpaper ? value.bundledPreset : 'off'}, `
+      + `custom=${value.customWallpaper ? `${gallery.length} images` : 'off'}, random=${value.randomWallpaper}`,
+  ].join('\n')
+
+  /** Put text on the clipboard, falling back to a hidden textarea. */
+  const copyText = async (text: string): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(text)
+      return
+    } catch {
+      const area = document.createElement('textarea')
+      area.value = text
+      area.style.position = 'fixed'
+      area.style.opacity = '0'
+      document.body.appendChild(area)
+      area.select()
+      document.execCommand('copy')
+      area.remove()
+    }
+  }
+
+  const reportIssue = (): void => {
+    const body = [copy('feedback.issueBody'), '', '---', '', diagnostics()].join('\n')
+    const url = `https://github.com/raven3005672/dsh-plugin-shell-skin/issues/new`
+      + `?title=${encodeURIComponent('[Bug] ')}&body=${encodeURIComponent(body)}`
+    window.open(url, '_blank', 'noopener')
+  }
+
+  const copyDiagnostics = async (): Promise<void> => {
+    await copyText(diagnostics())
+    setCopied(true)
+    window.setTimeout(() => { setCopied(false) }, 2000)
+  }
+
   const restoreDefaults = (): void => {
     pending.current = {}
     setDraft({})
@@ -529,7 +571,13 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
       </div>
 
       {state.writable ? null : <p style={hint}>{copy('profile.locked')}</p>}
-      {version === undefined ? null : <p style={hint}>{`${copy('version.label')} ${version}`}</p>}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+        <Button size="sm" variant="outline" onClick={reportIssue}>{copy('feedback.report')}</Button>
+        <Button size="sm" variant="outline" onClick={() => { void copyDiagnostics() }}>
+          {copied ? copy('feedback.copied') : copy('feedback.copy')}
+        </Button>
+        <span style={hint}>{`${copy('version.label')} ${version ?? '—'}`}</span>
+      </div>
     </div>
   )
 }
