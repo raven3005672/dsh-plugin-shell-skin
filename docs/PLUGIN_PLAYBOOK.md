@@ -154,8 +154,19 @@ export function apply(ctx: Context): void {
 | 插槽 | 用途 | 选项 |
 |---|---|---|
 | `shell.overlay` | 全屏层（启动动画、遮罩） | `id` |
-| `plugins.row.config` | 插件行的配置页 | `key: 包名#行id`，可选 `locale`、`inject` |
-| `settings.general.item` | 设置页「通用」里的一行 | `id` |
+| `plugins.row.config` | 插件页里点插件行打开的配置页 | `key: 包名#行id`，可选 `locale`、`inject` |
+| `settings.general.item` | 设置页「通用」里的一行 | `id`、`order` |
+| `settings.section` | 设置左侧新增一整页 | `id`、`order`、`label`、`locale`、`inject` |
+
+`plugins.row.config` 的 owner props 会递给你 `form`；`settings.section` 不会——需要自己取：
+
+```ts
+ctx.slots.register({ name: 'settings.section', id: 'xxx', label: () => t('nav'),
+  locale: NS, inject: () => ({ form: ctx.configForms.get(NS) }) }, Section)
+```
+
+并且 **client 的 `inject` 要加 `'configForms'`**，否则运行时报
+`cannot get property "configForms" without inject`。
 
 ---
 

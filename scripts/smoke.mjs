@@ -46,7 +46,7 @@ function applyWith(settings) {
   globalThis.__SHELL_SKIN__ = settings
   const plugin = loadBundle()
   assert.equal(typeof plugin.apply, 'function', 'client plugin must export apply')
-  assert.deepEqual(plugin.inject, ['slots', 'theme', 'locale'], 'inject must declare its services')
+  assert.deepEqual(plugin.inject, ['slots', 'theme', 'locale', 'configForms'], 'inject must declare its services')
 
   const calls = []
   plugin.apply({
@@ -70,12 +70,12 @@ function applyWith(settings) {
 const defaults = applyWith(undefined)
 assert.ok(defaults.includes('inject:shell.overlay'), 'defaults must wait on shell.overlay')
 assert.ok(defaults.some(call => call.startsWith('register:shell.overlay#')), 'defaults must render the splash')
-assert.ok(defaults.some(call => call.startsWith('register:plugins.row.config#')), 'must offer the row config page')
+assert.ok(defaults.some(call => call.startsWith('register:settings.section#')), 'must offer a settings section')
 assert.ok(defaults.some(call => call.startsWith('theme:shell-skin:')), 'must stack a theme override layer')
 
 const muted = applyWith({ splash: false })
 assert.ok(!muted.some(call => call.startsWith('register:shell.overlay#')), 'splash: false must not register the splash')
-assert.ok(muted.some(call => call.startsWith('register:plugins.row.config#')), 'splash: false must keep the settings page')
+assert.ok(muted.some(call => call.startsWith('register:settings.section#')), 'splash: false must keep the settings section')
 assert.ok(muted.some(call => call.startsWith('theme:shell-skin:')), 'splash: false must keep the token layer')
 
 console.log(`ok ${pkg.name}: defaults[${defaults.join(' | ')}] muted[${muted.join(' | ')}]`)

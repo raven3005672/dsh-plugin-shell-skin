@@ -2,6 +2,12 @@
 
 本文件记录每个发布版本的变更。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.1.7] - 2026-10-21
+
+### 变更
+
+- 设置从「插件」页里的插件配置迁移到「设置 → Shell 皮肤」，与「通用」「模型」并列。插件页不再提供 Configure 按钮。
+
 ## [0.1.6] - 2026-10-21
 
 ### 修复

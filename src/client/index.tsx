@@ -11,14 +11,14 @@ import type {} from '@deepseek-ai/dsh-client-ui-theme/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
-import type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/client'  // ctx.theme
+
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { ReactElement } from 'react'
 import wallpaper from '../../assets/wallpaper.jpg'
 import { en, zh, type SkinKey } from './locales.ts'
-import { SkinSettingsRow } from './SkinSettingsRow.tsx'
+import { SkinSettingsSection } from './SkinSettingsSection.tsx'
 import { clearStoredWallpaper, loadWallpaper, saveWallpaper } from './wallpaper-store.ts'
 
 
@@ -35,7 +35,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 /** Build the plugin's browser identity. */
 export const name = 'shell-skin'
 /** Services this plugin reads. */
-export const inject = ['slots', 'theme', 'locale']
+export const inject = ['slots', 'theme', 'locale', 'configForms']
 
 /** Settings the host half injects into the boot HTML. */
 interface SkinSettings {
@@ -350,14 +350,17 @@ export function apply(ctx: Context): void {
 
   ctx.effect(() => ctx.locale.register(LOCALE_NS, { zh, en }))
 
-  ctx.slots.inject('plugins.row.config', () => ctx.slots.register({
-    name: 'plugins.row.config',
-    key: 'dsh-plugin-shell-skin#dsh-plugin-shell-skin',
+  ctx.slots.inject('settings.section', () => ctx.slots.register({
+    name: 'settings.section',
+    id: 'shell-skin',
+    order: 30,
+    label: () => ctx.locale.bind(LOCALE_NS)('nav'),
     locale: LOCALE_NS,
     inject: () => ({
       // Preview during a drag: repaint locally, without a Host round trip.
       // The release still persists once.
       preview: (patch: Partial<SkinSettings>) => { applyNow({ ...currentValues, ...patch }) },
+      form: ctx.configForms.get(SETTINGS_NAMESPACE),
       // The custom wallpaper never reaches the Host: the file stays in this
       // browser's IndexedDB and only its Blob URL is applied.
       setWallpaper: async (file: File) => {
@@ -376,7 +379,7 @@ export function apply(ctx: Context): void {
         applyWallpaper()
       },
     }),
-  }, SkinSettingsRow))
+  }, SkinSettingsSection))
 
   ctx.effect(() => {
     const style = document.createElement('style')
