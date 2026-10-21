@@ -446,7 +446,7 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
             <br />
             <span style={hint}>{copy('image.description')}</span>
           </span>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
             {gallery.map(item => (
               <button
                 key={item.id}
@@ -457,27 +457,38 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
                 onClick={() => { void chooseWallpaper(item.id) }}
                 style={{
                   padding: 0,
-                  width: 72,
-                  height: 44,
+                  width: '100%',
+                  aspectRatio: '16 / 9',
                   overflow: 'hidden',
-                  borderRadius: 8,
+                  borderRadius: 'var(--dsw-radius-xl)',
                   cursor: 'pointer',
                   background: 'transparent',
-                  border: active === item.id ? '2px solid #4c8dff' : '2px solid transparent',
-                  boxShadow: active === item.id ? '0 0 0 1px rgba(76,141,255,0.35)' : 'inset 0 0 0 1px rgba(0,0,0,0.12)',
+                  border: '0.5px solid var(--dsw-alias-border-l4)',
+                  boxShadow: active === item.id ? '0 0 0 2px var(--dsw-static-neutral-bluish-400)' : 'none',
                 }}
               >
                 <img src={item.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
               </button>
             ))}
-            <Button
-              size="sm"
-              variant="outline"
+            <button
+              type="button"
               disabled={disabled || !storageAvailable || gallery.length >= MAX_WALLPAPERS}
               onClick={() => inputRef.current?.click()}
+              style={{
+                aspectRatio: '16 / 9',
+                width: '100%',
+                borderRadius: 'var(--dsw-radius-xl)',
+                border: '0.5px dashed var(--dsw-alias-border-l4)',
+                background: 'transparent',
+                color: 'var(--dsw-alias-label-secondary)',
+                font: 'inherit',
+                fontSize: 13,
+                cursor: 'pointer',
+                opacity: disabled || !storageAvailable || gallery.length >= MAX_WALLPAPERS ? 0.5 : 1,
+              }}
             >
               {copy('image.add')}
-            </Button>
+            </button>
             <input
               ref={inputRef}
               type="file"
@@ -525,7 +536,7 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
           <br />
           <span style={hint}>{copy('preset.description')}</span>
         </span>
-        <span style={{ display: 'flex', gap: 10 }}>
+        <span style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
           {(presets ?? []).map(preset => {
             const selected = value.bundledPreset === preset.id
             return (
@@ -538,14 +549,14 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
                 onClick={() => { write('bundledPreset', preset.id); commit() }}
                 style={{
                   padding: 0,
-                  width: 118,
-                  height: 66,
+                  width: '100%',
+                  aspectRatio: '16 / 9',
                   overflow: 'hidden',
-                  borderRadius: 8,
+                  borderRadius: 'var(--dsw-radius-xl)',
                   cursor: 'pointer',
                   background: 'transparent',
-                  border: selected ? '2px solid #4c8dff' : '2px solid transparent',
-                  boxShadow: selected ? '0 0 0 1px rgba(76,141,255,0.35)' : 'inset 0 0 0 1px rgba(0,0,0,0.12)',
+                  border: '0.5px solid var(--dsw-alias-border-l4)',
+                  boxShadow: selected ? '0 0 0 2px var(--dsw-static-neutral-bluish-400)' : 'none',
                   opacity: disabled || !value.bundledWallpaper ? 0.5 : 1,
                 }}
               >
