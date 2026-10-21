@@ -79,6 +79,8 @@ export interface SkinSettingsRowProps {
   hasWallpaper?(): boolean
   /** Plugin version, shown at the bottom of the page. */
   version?: string
+  /** Bundled artwork choices rendered as thumbnails. */
+  presets?: readonly { id: string; src: string; labelKey: SkinKey }[]
   /** Row settings face, absent while the namespace is not served. */
   form?: {
     state: SkinConfigState
@@ -109,7 +111,7 @@ const DEFAULTS: SkinConfigValues = {
  * @param props - owner props supplied by the Plugins page.
  * @returns the description line, the form, or null while nothing is known.
  */
-export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpaper, wallpaperName, hasWallpaper, version, t }: SkinSettingsRowProps): ReactElement | null {
+export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpaper, wallpaperName, hasWallpaper, version, presets, t }: SkinSettingsRowProps): ReactElement | null {
   // Dragging a range fires `change` per pixel. Staging the preview locally and
   // committing once on release keeps the Host at one write per gesture instead
   // of one per frame.
@@ -376,23 +378,46 @@ export function SkinSettingsRow({ view, form, preview, setWallpaper, clearWallpa
         />
       </label>
 
-      <label style={row}>
+      <div style={{ display: 'grid', gap: 8 }}>
         <span style={label}>
           {copy('preset.title')}
           <br />
           <span style={hint}>{copy('preset.description')}</span>
         </span>
-        <select
-          value={value.bundledPreset}
-          disabled={disabled || !value.bundledWallpaper}
-          style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(0,0,0,0.15)', background: 'transparent', color: 'inherit' }}
-          onChange={event => { write('bundledPreset', event.target.value); commit() }}
-        >
-          <option value="classic">{copy('preset.classic')}</option>
-          <option value="aurora">{copy('preset.aurora')}</option>
-          <option value="arc">{copy('preset.arc')}</option>
-        </select>
-      </label>
+        <span style={{ display: 'flex', gap: 10 }}>
+          {(presets ?? []).map(preset => {
+            const selected = value.bundledPreset === preset.id
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                aria-label={copy(preset.labelKey)}
+                aria-pressed={selected}
+                disabled={disabled || !value.bundledWallpaper}
+                onClick={() => { write('bundledPreset', preset.id); commit() }}
+                style={{
+                  padding: 0,
+                  width: 118,
+                  height: 66,
+                  overflow: 'hidden',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  background: 'transparent',
+                  border: selected ? '2px solid #4c8dff' : '2px solid transparent',
+                  boxShadow: selected ? '0 0 0 1px rgba(76,141,255,0.35)' : 'inset 0 0 0 1px rgba(0,0,0,0.12)',
+                  opacity: disabled || !value.bundledWallpaper ? 0.5 : 1,
+                }}
+              >
+                <img
+                  src={preset.src}
+                  alt=""
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                />
+              </button>
+            )
+          })}
+        </span>
+      </div>
 
       {value.customWallpaper ? (
         <div style={row}>

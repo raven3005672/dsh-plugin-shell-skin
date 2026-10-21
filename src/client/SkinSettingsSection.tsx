@@ -40,6 +40,8 @@ export interface SkinSettingsSectionProps {
   hasWallpaper?(): boolean
   /** Plugin version shown in the footer. */
   version?: string
+  /** Bundled artwork choices, with the thumbnail the row shows. */
+  presets?: readonly { id: string; src: string; labelKey: SkinKey }[]
 }
 
 /**
@@ -48,7 +50,7 @@ export interface SkinSettingsSectionProps {
  * @returns the settings page body.
  */
 export function SkinSettingsSection({
-  t, form, preview, setWallpaper, clearWallpaper, wallpaperName, hasWallpaper, version,
+  t, form, preview, setWallpaper, clearWallpaper, wallpaperName, hasWallpaper, version, presets,
 }: SkinSettingsSectionProps): ReactElement {
   const [state, setState] = useState<SkinConfigState>(() => form.getSnapshot())
 
@@ -72,6 +74,7 @@ export function SkinSettingsSection({
       wallpaperName={wallpaperName}
       hasWallpaper={hasWallpaper}
       version={version}
+      presets={presets}
     />
   )
 }

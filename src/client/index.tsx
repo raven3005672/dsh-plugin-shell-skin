@@ -390,6 +390,11 @@ export function apply(ctx: Context): void {
       preview: (patch: Partial<SkinSettings>) => { applyNow({ ...currentValues, ...patch }) },
       form: ctx.configForms.get(SETTINGS_NAMESPACE),
       version: currentValues.version,
+      presets: [
+        { id: 'classic', src: wallpaper, labelKey: 'preset.classic' },
+        { id: 'aurora', src: wallpaperAurora, labelKey: 'preset.aurora' },
+        { id: 'arc', src: wallpaperArc, labelKey: 'preset.arc' },
+      ],
       // The custom wallpaper never reaches the Host: the file stays in this
       // browser's IndexedDB and only its Blob URL is applied.
       setWallpaper: async (file: File) => {
