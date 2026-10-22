@@ -15,7 +15,7 @@ name: publish
 
 on:
   push:
-    tags: ['v*']
+    tags: ['v*', 'retag-*']
 
 permissions:
   contents: read
@@ -23,6 +23,8 @@ permissions:
 
 jobs:
   publish:
+    # A `retag-*` tag is handled by the promotion job below, not by publishing.
+    if: startsWith(github.ref_name, 'v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,3 +58,20 @@ jobs:
 
       # prepack builds lib/, prepublishOnly re-runs the checks.
       - run: npm publish --provenance
+
+  # Trusted publishing authorizes the workflow file, not just the repository,
+  # so dist-tag promotion has to run here (same filename the npm config names).
+  promote:
+    if: startsWith(github.ref_name, 'retag-')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --global npm@latest
+      - name: Promote the tagged version to latest
+        run: npm dist-tag add "dsh-plugin-shell-skin@${GITHUB_REF_NAME#retag-}" latest
