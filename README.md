@@ -112,6 +112,19 @@ dsh plugin --profile web add "file:$PWD"
 - 不跨设备同步；
 - 「移除图片」只删文件，不动开关——删完自动回落到内置图或纯底色。
 
+## 插件市场
+
+市场索引由 npm 上的已发布版本生成，托管在 GitHub Pages：
+
+```
+https://raven3005672.github.io/dsh-plugin-shell-skin/index.json
+```
+
+在 DSH 里打开 **Plugins → More（Experimental plugins）→ Custom plugin markets**，
+然后 **Discover → Add index source**，粘贴上面的地址即可浏览和安装。
+
+索引包含 0.2.0 及更早的 0.1.x 版本；每次发新版后需要重新生成索引并更新 `gh-pages` 分支。
+
 ## 桌面端差异
 
 在 Electron 桌面应用里同样生效，但有两处观感差异：
