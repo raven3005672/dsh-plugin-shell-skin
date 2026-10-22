@@ -18,8 +18,7 @@ import { createPortal } from 'react-dom'
 import type { ReactElement } from 'react'
 import wallpaperArc from '../../assets/wallpaper-arc.jpg'
 import wallpaperAurora from '../../assets/wallpaper-aurora.jpg'
-import wallpaperWhale1 from '../../assets/wallpaper-whale-1.jpg'
-import wallpaperWhale2 from '../../assets/wallpaper-whale-2.jpg'
+import wallpaperWhale from '../../assets/wallpaper-whale.jpg'
 import { en, zh, type SkinKey } from './locales.ts'
 import { SkinSettingsSection } from './SkinSettingsSection.tsx'
 import { addWallpaper, loadActiveId, loadLastPick, loadWallpapers, removeWallpaper, saveActiveId, saveLastPick, type StoredWallpaper } from './wallpaper-store.ts'
@@ -37,8 +36,7 @@ const NAV_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 102
 const PRESETS: readonly { id: string; src: string; labelKey: SkinKey }[] = [
   { id: 'aurora', src: wallpaperAurora, labelKey: 'preset.aurora' },
   { id: 'arc', src: wallpaperArc, labelKey: 'preset.arc' },
-  { id: 'whale-1', src: wallpaperWhale1, labelKey: 'preset.whale1' },
-  { id: 'whale-2', src: wallpaperWhale2, labelKey: 'preset.whale2' },
+  { id: 'whale', src: wallpaperWhale, labelKey: 'preset.whale' },
 ]
 
 /** Fast lookup for the applied background. */
