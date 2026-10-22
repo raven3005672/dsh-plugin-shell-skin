@@ -110,7 +110,7 @@ const DEFAULTS: SkinConfigValues = {
   customWallpaper: false,
   randomWallpaper: false,
   bundledWallpaper: true,
-  bundledPreset: 'classic',
+  bundledPreset: 'aurora',
 }
 
 /**
@@ -563,7 +563,8 @@ export function SkinSettingsRow({ view, form, preview, listWallpapers, activeWal
         </span>
         <span style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
           {(presets ?? []).map(preset => {
-            const selected = value.bundledPreset === preset.id
+            const available = (presets ?? []).some(item => item.id === value.bundledPreset)
+            const selected = (available ? value.bundledPreset : presets?.[0]?.id) === preset.id
             return (
               <button
                 key={preset.id}

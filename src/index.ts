@@ -61,7 +61,7 @@ export const Config = z.object({
   customWallpaper: z.boolean().default(false).volatile(),
   randomWallpaper: z.boolean().default(false).volatile(),
   bundledWallpaper: z.boolean().default(true).volatile(),
-  bundledPreset: z.string().default('classic').volatile(),
+  bundledPreset: z.string().default('aurora').volatile(),
 })
 
 /**

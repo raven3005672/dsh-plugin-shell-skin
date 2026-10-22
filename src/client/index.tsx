@@ -16,7 +16,6 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { ReactElement } from 'react'
-import wallpaper from '../../assets/wallpaper.jpg'
 import wallpaperArc from '../../assets/wallpaper-arc.jpg'
 import wallpaperAurora from '../../assets/wallpaper-aurora.jpg'
 import wallpaperWhale1 from '../../assets/wallpaper-whale-1.jpg'
@@ -36,7 +35,6 @@ const NAV_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 102
 
 /** Bundled artwork choices, in settings order. */
 const PRESETS: readonly { id: string; src: string; labelKey: SkinKey }[] = [
-  { id: 'classic', src: wallpaper, labelKey: 'preset.classic' },
   { id: 'aurora', src: wallpaperAurora, labelKey: 'preset.aurora' },
   { id: 'arc', src: wallpaperArc, labelKey: 'preset.arc' },
   { id: 'whale-1', src: wallpaperWhale1, labelKey: 'preset.whale1' },
@@ -47,7 +45,7 @@ const PRESETS: readonly { id: string; src: string; labelKey: SkinKey }[] = [
 const PRESET_SOURCES: Record<string, string> = Object.fromEntries(PRESETS.map(item => [item.id, item.src]))
 
 /** Preset used when the config names one that no longer ships. */
-const DEFAULT_PRESET = 'classic'
+const DEFAULT_PRESET = 'aurora'
 
 /**
  * Normalise a preset id from config.
@@ -112,7 +110,7 @@ const FALLBACK_SETTINGS: SkinSettings = {
   customWallpaper: false,
   randomWallpaper: false,
   bundledWallpaper: true,
-  bundledPreset: 'classic',
+  bundledPreset: 'aurora',
 }
 
 /** Accept only a hex colour from the injected settings. */
@@ -284,7 +282,7 @@ const SKIN_CSS = `
     --shell-skin-boot-light: ${settings.bootColorLight};
     --shell-skin-boot-dark: ${settings.bootColorDark};
     background-color: var(--shell-skin-boot-light);
-    background-image: var(--shell-skin-wallpaper, var(--shell-skin-bundled, url("${wallpaper}")));
+    background-image: var(--shell-skin-wallpaper, var(--shell-skin-bundled, none));
     background-position: center;
     background-size: cover;
     background-repeat: no-repeat;
@@ -640,7 +638,8 @@ export function apply(ctx: Context): void {
     const sync = (): void => {
       const value = form.getSnapshot().value
       if (value === undefined) return
-      applyNow({ ...currentValues, ...value })
+      // An old profile may still name a preset that no longer ships.
+      applyNow({ ...currentValues, ...value, bundledPreset: presetId(value.bundledPreset) })
     }
     // Subscribe before the first read: a change landing between the read and
     // the subscription would otherwise be lost. The replay is idempotent.
