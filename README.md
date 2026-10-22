@@ -150,13 +150,11 @@ pnpm dsh web --patch ../dsh-plugin-shell-skin/dev.patch.yml
 
 改了前端代码刷新页面即可；改了后端代码或调试用的挂载配置需要重启。
 
-写新插件时的完整检查清单见 [docs/PLUGIN_PLAYBOOK.md](docs/PLUGIN_PLAYBOOK.md)。
-
 ## 素材与版权声明
 
-插件内置的默认壁纸图片**来自网络**，仅用于演示和装饰目的，作者未持有该图片的明确授权，版权归原作者所有。
+插件内置的壁纸插图由作者使用 AI 图像服务生成，原图保存在 `assets/master/`，不随 npm 包发布。
 
-如果你是版权方，认为这张图片的使用侵犯了你的权益，请通过 [Issues](https://github.com/raven3005672/dsh-plugin-shell-skin/issues) 联系作者，附上图片说明与权利依据。确认后我们会尽快替换或移除该素材，并发布新版本。
+AI 生成内容的版权状态因司法辖区而异。如果你认为其中某个素材侵犯了你的权益，请通过 [Issues](https://github.com/raven3005672/dsh-plugin-shell-skin/issues) 联系作者，附上图片说明与权利依据。确认后我们会尽快替换或移除该素材，并发布新版本。
 
 另外说明：用户自行上传的壁纸只保存在本地浏览器（IndexedDB），不会随插件分发，也不会上传到任何服务器；由用户自行确保其上传内容的合法性。
 
