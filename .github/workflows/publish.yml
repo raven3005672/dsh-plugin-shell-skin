@@ -74,4 +74,8 @@ jobs:
           node-version: 22
       - run: npm install --global npm@latest
       - name: Promote the tagged version to latest
-        run: npm dist-tag add "dsh-plugin-shell-skin@${GITHUB_REF_NAME#retag-}" latest
+        run: |
+          # retag-0.2.0 -> 0.2.0; refuse tags that name an unpublished version.
+          target="${GITHUB_REF_NAME#retag-}"
+          npm view "dsh-plugin-shell-skin@${target}" version >/dev/null
+          npm dist-tag add "dsh-plugin-shell-skin@${target}" latest
