@@ -1,0 +1,138 @@
+{
+  "format": 1,
+  "title": "DSH plugins",
+  "plugins": [
+    {
+      "name": "dsh-plugin-shell-skin",
+      "title": {
+        "en": "Interface skin",
+        "zh": "界面皮肤"
+      },
+      "description": {
+        "en": "Opening animation, custom wallpaper, and panel opacity, applied as you change them.",
+        "zh": "开场动画、自定义壁纸、面板透明度，改完立即生效。"
+      },
+      "icon": "icons/ccd1243628296edc.png",
+      "homepage": "https://github.com/raven3005672/dsh-plugin-shell-skin#readme",
+      "repository": {
+        "url": "https://github.com/raven3005672/dsh-plugin-shell-skin"
+      },
+      "metadata": {
+        "keywords": [
+          "dsh",
+          "deepseek-harness",
+          "dsh-plugin",
+          "theme",
+          "wallpaper",
+          "skin",
+          "splash",
+          "background",
+          "appearance",
+          "ui"
+        ]
+      },
+      "versions": [
+        {
+          "version": "0.2.0",
+          "publishTimestamp": 1792665085,
+          "source": {
+            "type": "npm"
+          },
+          "engines": {
+            "dsh": ">=0.2.0 <0.3.0"
+          }
+        },
+        {
+          "version": "0.1.8",
+          "publishTimestamp": 1792573227,
+          "source": {
+            "type": "npm"
+          },
+          "engines": {
+            "dsh": ">=0.2.0 <0.3.0"
+          }
+        },
+        {
+          "version": "0.1.7",
+          "publishTimestamp": 1792561322,
+          "source": {
+            "type": "npm"
+          },
+          "engines": {
+            "dsh": ">=0.2.0 <0.3.0"
+          }
+        },
+        {
+          "version": "0.1.6",
+          "publishTimestamp": 1792514236,
+          "source": {
+            "type": "npm"
+          },
+          "engines": {
+            "dsh": ">=0.2.0 <0.3.0"
+          }
+        },
+        {
+          "version": "0.1.5",
+          "publishTimestamp": 1792475006,
+          "source": {
+            "type": "npm"
+          },
+          "engines": {
+            "dsh": ">=0.2.0 <0.3.0"
+          }
+        },
+        {
+          "version": "0.1.4",
+          "publishTimestamp": 1792472734,
+          "source": {
+            "type": "npm"
+          },
+          "engines": {
+            "dsh": ">=0.2.0 <0.3.0"
+          }
+        },
+        {
+          "version": "0.1.3",
+          "publishTimestamp": 1792423440,
+          "source": {
+            "type": "npm"
+          },
+          "engines": {
+            "dsh": ">=0.2.0 <0.3.0"
+          }
+        },
+        {
+          "version": "0.1.2",
+          "publishTimestamp": 1792664637,
+          "source": {
+            "type": "npm"
+          },
+          "engines": {
+            "dsh": ">=0.2.0 <0.3.0"
+          }
+        },
+        {
+          "version": "0.1.1",
+          "publishTimestamp": 1792427562,
+          "source": {
+            "type": "npm"
+          },
+          "engines": {
+            "dsh": ">=0.2.0 <0.3.0"
+          }
+        },
+        {
+          "version": "0.1.0",
+          "publishTimestamp": 1792417945,
+          "source": {
+            "type": "npm"
+          },
+          "engines": {
+            "dsh": ">=0.2.0 <0.3.0"
+          }
+        }
+      ]
+    }
+  ]
+}
