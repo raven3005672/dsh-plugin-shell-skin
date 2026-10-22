@@ -46,7 +46,7 @@ export interface Config {
   randomWallpaper: Volatile<boolean>
   /** Fall back to the artwork shipped with the plugin. */
   bundledWallpaper: Volatile<boolean>
-  /** Which bundled artwork to use: classic, aurora, or arc. */
+  /** Which bundled artwork to use: a PRESETS id from the client half. */
   bundledPreset: Volatile<string>
 }
 

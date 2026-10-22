@@ -19,6 +19,8 @@ import type { ReactElement } from 'react'
 import wallpaper from '../../assets/wallpaper.jpg'
 import wallpaperArc from '../../assets/wallpaper-arc.jpg'
 import wallpaperAurora from '../../assets/wallpaper-aurora.jpg'
+import wallpaperWhale1 from '../../assets/wallpaper-whale-1.jpg'
+import wallpaperWhale2 from '../../assets/wallpaper-whale-2.jpg'
 import { en, zh, type SkinKey } from './locales.ts'
 import { SkinSettingsSection } from './SkinSettingsSection.tsx'
 import { addWallpaper, loadActiveId, loadLastPick, loadWallpapers, removeWallpaper, saveActiveId, saveLastPick, type StoredWallpaper } from './wallpaper-store.ts'
@@ -37,6 +39,8 @@ const PRESETS: readonly { id: string; src: string; labelKey: SkinKey }[] = [
   { id: 'classic', src: wallpaper, labelKey: 'preset.classic' },
   { id: 'aurora', src: wallpaperAurora, labelKey: 'preset.aurora' },
   { id: 'arc', src: wallpaperArc, labelKey: 'preset.arc' },
+  { id: 'whale-1', src: wallpaperWhale1, labelKey: 'preset.whale1' },
+  { id: 'whale-2', src: wallpaperWhale2, labelKey: 'preset.whale2' },
 ]
 
 /** Fast lookup for the applied background. */
@@ -91,7 +95,7 @@ interface SkinSettings {
   randomWallpaper: boolean
   /** Fall back to the artwork shipped with the plugin. */
   bundledWallpaper: boolean
-  /** Which bundled artwork to use: classic, aurora, or arc. */
+  /** Which bundled artwork to use: a PRESETS id. */
   bundledPreset: string
   /** Package version, injected by the host for the settings footer. */
   version?: string
