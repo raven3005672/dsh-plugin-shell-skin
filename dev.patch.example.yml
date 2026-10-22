@@ -1,0 +1,9 @@
+# Local development overlay: mount shell-skin straight from a checkout.
+#
+# Copy this file to dev.patch.yml (gitignored) and replace the path with the
+# absolute path of your checkout. Then, from the deepseek-harness checkout:
+#
+#   pnpm dsh web --patch ../dsh-plugin-shell-skin/dev.patch.yml
+- insert:
+    - id: dsh-plugin-shell-skin
+      name: /absolute/path/to/dsh-plugin-shell-skin/lib/index.js

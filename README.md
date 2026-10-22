@@ -142,11 +142,16 @@ pnpm smoke        # 不启浏览器，加载 client bundle 并断言注册行为
 内置壁纸的原图放在 `assets/master/`（不参与打包），打包用的是 `assets/wallpaper-*.jpg`；
 新增壁纸时改 `src/client/index.tsx` 的 `PRESETS` 一处，再补 `preset.*` 两个语言 key 即可。
 
-边改边看：在 `deepseek-harness` 目录里挂本地 overlay，不用装进 profile：
+边改边看：把 `dev.patch.example.yml` 复制成 `dev.patch.yml`，把里面的路径改成
+本仓库的绝对路径，然后在 `deepseek-harness` 目录里挂本地 overlay：
 
 ```sh
+cp dev.patch.example.yml dev.patch.yml   # 改 name 为本仓库 lib/index.js 的绝对路径
+cd ../deepseek-harness
 pnpm dsh web --patch ../dsh-plugin-shell-skin/dev.patch.yml
 ```
+
+`dev.patch.yml` 是本机文件，已在 `.gitignore` 里，不会提交。
 
 改了前端代码刷新页面即可；改了后端代码或调试用的挂载配置需要重启。
 

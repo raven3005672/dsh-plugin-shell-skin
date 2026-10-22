@@ -6,3 +6,6 @@ lib/
 
 # 本地学习笔记，只留在本机
 notes/
+
+# local development overlay (copy dev.patch.example.yml)
+dev.patch.yml
