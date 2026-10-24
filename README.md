@@ -170,7 +170,7 @@ pnpm dsh web --patch ../dsh-plugin-shell-skin/dev.patch.yml
 
 ## 素材与版权声明
 
-插件内置的壁纸插图由作者使用 AI 图像服务生成，原图保存在 `assets/master/`，不随 npm 包发布。
+插件内置的壁纸插图由作者使用 AI 图像服务生成，原图保存在 `assets/master/`，不随 npm 包发布。它们只是展示壁纸功能的**演示预设**，不构成对任何第三方角色或作品的授权声明。
 
 AI 生成内容的版权状态因司法辖区而异。如果你认为其中某个素材侵犯了你的权益，请通过 [Issues](https://github.com/raven3005672/dsh-plugin-shell-skin/issues) 联系作者，附上图片说明与权利依据。确认后我们会尽快替换或移除该素材，并发布新版本。
 
@@ -200,4 +200,18 @@ git push origin v0.1.4
 
 ## 许可
 
-[MIT](LICENSE)
+代码：[MIT](LICENSE)。
+
+### 二次创作约定
+
+欢迎基于本项目做衍生、改版或换皮。MIT 允许你自由使用、修改和再分发，保留 [LICENSE](LICENSE) 即可。
+
+如果你愿意在公开渠道（GitHub 仓库、产品页等）顺手注明原项目，对作者是很大的鼓励：
+
+<https://github.com/raven3005672/dsh-plugin-shell-skin>
+
+这不是 MIT 的附加条件，只是一条君子协定。
+
+### 素材
+
+`assets/` 里的内置壁纸是 AI 生成的演示预设，用来展示壁纸、透明度和随机切换这些功能，不是任何第三方角色的官方授权素材。它们随插件一起分发；如果单独复用，注明来源即可。
