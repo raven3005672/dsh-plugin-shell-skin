@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-shell-skin",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A skin for DeepSeek Harness: opening animation, custom wallpaper, and panel opacity, applied as you change them.",
   "license": "MIT",
   "type": "module",
