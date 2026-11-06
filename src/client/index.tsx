@@ -286,12 +286,14 @@ const SKIN_CSS = `
     background-repeat: no-repeat;
     background-attachment: fixed;
   }
-  /* Desktop: the shell repaints the sidebar as a 40% mix of the fill token plus
-     a blue wash, so both the wallpaper switch and the opacity slider stop
-     meaning what they say. Repaint it from the token alone. */
+  /* Desktop: newer shells repaint the sidebar with a gradient plus a color-mix
+     of the fill token, so both the wallpaper switch and the opacity slider stop
+     meaning what they say. Out-specify the plain and drawer rules (the shell's
+     darwin selector is 0,4,0) and repaint from the token alone. */
+  html[data-platform='darwin']:root [class*='frame']:not([data-sidebar-drawer]) [class*='sidebarCol'],
+  html[data-platform='darwin']:root [class*='frame'][data-sidebar-drawer] [class*='sidebarCol'],
   html[data-platform='darwin']:root [class*='sidebarCol'] {
-    background-color: var(--dsw-specific-sidebar-fill);
-    background-image: none;
+    background: var(--dsw-specific-sidebar-fill);
   }
   /* The palette flag lives on <body>, so the colour is selected from html. */
   html:has(body[data-ds-dark-theme]),
